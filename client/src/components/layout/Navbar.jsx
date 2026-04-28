@@ -100,7 +100,7 @@ export default function Navbar() {
                 <Menu className="w-5 h-5 text-taupe ml-1" />
                 {user ? (
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-background text-xs font-bold">
-                    {user.name.charAt(0)}
+                    {user.name?.charAt(0) || 'U'}
                   </div>
                 ) : (
                   <div className="w-8 h-8 bg-taupe/20 rounded-full flex items-center justify-center text-primary">

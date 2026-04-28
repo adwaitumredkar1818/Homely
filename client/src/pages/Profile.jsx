@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, Shield, Calendar, MapPin, Star, Settings, ChevronRight, LogOut, Loader2, Building2, Utensils, LayoutDashboard, PlusCircle, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Profile() {
   const { user, token, logout } = useAuth();
@@ -81,7 +81,7 @@ export default function Profile() {
           
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
             <div className="w-32 h-32 bg-primary rounded-full flex items-center justify-center text-background text-5xl font-bold shadow-2xl border-4 border-white/10">
-              {user?.name.charAt(0)}
+              {user?.name?.charAt(0) || 'U'}
             </div>
             
             <div className="flex-1 text-center md:text-left">
@@ -145,6 +145,16 @@ export default function Profile() {
                     {isHost ? 'Reservations' : 'Reviews'}
                   </p>
                 </div>
+                {isHost && (
+                  <div className="p-4 bg-background rounded-2xl border border-white/5 col-span-2">
+                    <p className="text-2xl font-bold text-green-500">
+                      ₹{(profileData?.monthlyStats?.reduce((sum, s) => sum + s.revenue, 0) || 0).toLocaleString()}
+                    </p>
+                    <p className="text-xs font-bold text-taupe uppercase tracking-wider">
+                      Total Revenue
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -195,56 +205,92 @@ export default function Profile() {
                 </button>
               </div>
 
-              {/* HOST VIEW: Show Listings */}
-              {isHost ? (
-                <div className="space-y-4">
-                  {profileData?.myListings?.length > 0 ? (
-                    profileData.myListings.map((listing) => (
-                      <div 
-                        key={listing.id}
-                        className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
-                      >
-                        <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
-                           <img src={listing.images?.[0]?.url || '/assets/rooms/student_room_1.png'} className="w-full h-full object-cover" alt="" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{listing.title}</h4>
-                            <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">ACTIVE</span>
+              {/* HOST VIEW: Show Listings & Messes */}
+              {isHost && (
+                <div className="space-y-8">
+                  {/* Property Listings */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-black text-taupe uppercase tracking-widest px-1">My Property Listings</h4>
+                    {profileData?.myListings?.length > 0 ? (
+                      profileData.myListings.map((listing) => (
+                        <div 
+                          key={listing.id}
+                          className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
+                        >
+                          <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
+                             <img src={listing.images?.[0]?.url || `/assets/rooms/student_room_${(listing.id % 15) + 1}.png`} className="w-full h-full object-cover" alt="" />
                           </div>
-                          <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
-                            <MapPin className="w-3.5 h-3.5" /> {listing.location}
-                          </p>
-                          <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                             <div className="text-lg font-bold text-primary">₹{listing.price?.toLocaleString()}</div>
-                             <button 
-                               onClick={() => navigate('/host/properties')}
-                               className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
-                             >
-                               Manage Listing
-                             </button>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{listing.title}</h4>
+                              <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">{listing.isBooked ? 'OCCUPIED' : 'ACTIVE'}</span>
+                            </div>
+                            <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
+                              <MapPin className="w-3.5 h-3.5" /> {listing.location}
+                            </p>
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                               <div className="text-lg font-bold text-primary">₹{listing.price?.toLocaleString()}</div>
+                               <button 
+                                 onClick={() => navigate('/host/properties')}
+                                 className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
+                               >
+                                 Manage Listing
+                               </button>
+                            </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 px-4 bg-background rounded-3xl border border-dashed border-white/10">
+                        <p className="text-taupe font-bold text-sm">No properties listed yet.</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-16 px-4 bg-background rounded-3xl border border-dashed border-white/10">
-                      <div className="w-20 h-20 bg-accent/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Building2 className="w-10 h-10 text-accent/30" />
+                    )}
+                  </div>
+
+                  {/* Mess Listings */}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-black text-taupe uppercase tracking-widest px-1">My Mess Listings</h4>
+                    {profileData?.myMesses?.length > 0 ? (
+                      profileData.myMesses.map((mess) => (
+                        <div 
+                          key={mess.id}
+                          className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
+                        >
+                          <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
+                             <img src={mess.images?.[0]?.url || `/assets/messes/mess_${(mess.id % 5) + 1}.png`} className="w-full h-full object-cover" alt="" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{mess.name}</h4>
+                              <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">ACTIVE</span>
+                            </div>
+                            <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
+                              <MapPin className="w-3.5 h-3.5" /> {mess.location}
+                            </p>
+                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                               <div className="text-lg font-bold text-primary">₹{mess.price?.toLocaleString()}</div>
+                               <button 
+                                 onClick={() => navigate('/home')}
+                                 className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
+                               >
+                                 View Public Page
+                               </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-10 px-4 bg-background rounded-3xl border border-dashed border-white/10">
+                        <p className="text-taupe font-bold text-sm">No messes listed yet.</p>
                       </div>
-                      <h4 className="text-xl font-bold text-primary mb-2">No Active Listings</h4>
-                      <p className="text-taupe mb-8 max-w-xs mx-auto font-medium">You haven't listed any properties yet. Start hosting today!</p>
-                      <button 
-                        onClick={() => navigate('/host/properties/new')}
-                        className="px-8 py-3 bg-accent text-background rounded-2xl font-bold shadow-lg shadow-accent/20 hover:scale-105 transition-transform flex items-center gap-2 mx-auto"
-                      >
-                        <PlusCircle className="w-4 h-4" /> Create First Listing
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              ) : (
-                /* TENANT VIEW: Show Bookings */
+              )}
+
+              {/* SHARED/TENANT VIEW: Show Bookings (Show for both roles now) */}
+              <div className={`space-y-4 ${isHost ? 'mt-12 pt-12 border-t border-white/10' : ''}`}>
+                {isHost && <h3 className="text-2xl font-bold text-primary mb-8">My Personal Bookings</h3>}
                 <div className="space-y-4">
                   {profileData?.myBookings?.length > 0 ? (
                     profileData.myBookings.map((booking) => (
@@ -297,7 +343,7 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

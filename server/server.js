@@ -86,10 +86,10 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       include: {
-        bookings: { include: { room: true } },
-        messBookings: { include: { mess: true } },
-        rooms: true,
-        messes: { include: { reviews: { include: { user: true } } } }
+        bookings: { include: { room: { include: { images: true } } } },
+        messBookings: { include: { mess: { include: { images: true } } } },
+        rooms: { include: { images: true } },
+        messes: { include: { images: true, reviews: { include: { user: true } } } }
       }
     });
 
@@ -110,6 +110,7 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
       const allRooms = await prisma.room.findMany({
         where: { hostId: user.id },
         include: { 
+          images: true,
           reviews: { include: { user: true } },
           bookings: { where: { status: 'CONFIRMED' } }
         }
@@ -131,6 +132,7 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
       const allMesses = await prisma.mess.findMany({
         where: { hostId: user.id },
         include: { 
+          images: true,
           reviews: { include: { user: true } },
           subscriptions: { where: { status: 'CONFIRMED' } }
         }
