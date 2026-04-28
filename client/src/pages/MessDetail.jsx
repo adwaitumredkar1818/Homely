@@ -92,7 +92,14 @@ export default function MessDetail() {
           Back to messes
         </Link>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2 capitalize">{mess.name}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2 capitalize">{mess.name}</h1>
+            {mess.isVerified && (
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-accent/20 text-accent rounded-full text-[10px] font-black uppercase tracking-widest border border-accent/30">
+                <Shield className="w-3.5 h-3.5" /> Verified
+              </div>
+            )}
+          </div>
           <div className="flex gap-4">
             <button className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-white/5 px-3 py-1.5 rounded-lg transition-colors border border-white/10">
               <Share className="w-4 h-4" /> Share
@@ -142,7 +149,8 @@ export default function MessDetail() {
         {/* Left Column (Details) */}
         <div className="flex-1 space-y-12">
           <div className="pb-8 border-b border-white/10">
-            <h2 className="text-2xl font-bold text-primary mb-4">About this Mess</h2>
+            <h2 className="text-2xl font-bold text-primary mb-1">About this Mess</h2>
+            <p className="text-taupe text-sm font-bold mb-4 uppercase tracking-widest">Managed by {mess.host?.name || 'Verified Partner'}</p>
             <p className="text-taupe leading-relaxed text-lg">
               {mess.description}
             </p>
@@ -152,8 +160,8 @@ export default function MessDetail() {
             <div className="flex gap-4">
               <Shield className="w-8 h-8 text-accent shrink-0" />
               <div>
-                <h3 className="font-bold text-lg text-primary">FSSAI Certified</h3>
-                <p className="text-taupe text-sm">Strict hygiene standards and regular safety inspections.</p>
+                <h3 className="font-bold text-lg text-primary">{mess.isVerified ? 'Premium Verification' : 'Verified Partner'}</h3>
+                <p className="text-taupe text-sm">{mess.isVerified ? 'Strict hygiene standards and regular safety inspections.' : 'Standard FSSAI registration verified.'}</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -291,6 +299,39 @@ export default function MessDetail() {
           <Star className="w-8 h-8 fill-accent text-accent" /> {mess.rating} · {mess.reviewCount} Reviews
         </h2>
 
+        {/* Review Form */}
+        <div className="mb-16 bg-surface p-8 rounded-[2.5rem] border border-white/10 shadow-xl">
+           <h3 className="text-xl font-bold text-primary mb-6">Rate your experience</h3>
+           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {['taste', 'hygiene', 'variety', 'value'].map(cat => (
+                 <div key={cat}>
+                    <p className="text-xs font-black uppercase text-taupe mb-2">{cat}</p>
+                    <div className="flex gap-1">
+                       {[1,2,3,4,5].map(star => (
+                          <button key={star} onClick={() => {}} className="p-1 hover:scale-110 transition-transform">
+                             <Star className="w-5 h-5 text-accent/20 hover:text-accent" />
+                          </button>
+                       ))}
+                    </div>
+                 </div>
+              ))}
+           </div>
+           <textarea 
+             placeholder="What did you think about the food and service?" 
+             className="w-full bg-background border border-white/5 rounded-2xl p-6 text-primary outline-none focus:ring-2 focus:ring-accent/30 mb-6 min-h-[120px]"
+           />
+           <div className="flex flex-col sm:flex-row gap-4">
+              <input 
+                type="text" 
+                placeholder="Image URL (optional)" 
+                className="flex-1 bg-background border border-white/5 rounded-2xl px-6 py-4 text-primary outline-none focus:ring-2 focus:ring-accent/30"
+              />
+              <button className="px-12 py-4 bg-accent text-background font-black rounded-2xl hover:scale-105 transition-transform shadow-lg shadow-accent/20 uppercase tracking-widest text-xs">
+                Submit Review
+              </button>
+           </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12">
           {mess.reviews && mess.reviews.map((rev) => (
             <div key={rev.id} className="space-y-4 p-6 bg-surface rounded-3xl border border-white/5 relative group hover:border-accent/20 transition-all">
@@ -309,6 +350,11 @@ export default function MessDetail() {
                 </div>
               </div>
               <p className="text-primary leading-relaxed">{rev.comment}</p>
+              {rev.imageUrl && (
+                <div className="mt-4 rounded-2xl overflow-hidden border border-white/10 max-w-sm">
+                  <img src={rev.imageUrl} alt="Review" className="w-full h-48 object-cover hover:scale-105 transition-transform cursor-pointer" />
+                </div>
+              )}
             </div>
           ))}
           {(!mess.reviews || mess.reviews.length === 0) && (

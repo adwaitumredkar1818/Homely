@@ -7,6 +7,11 @@ export default function RoomCard({ room }) {
   return (
     <Link to={`/room/${room.id}`} className="flex flex-col gap-4 border border-white/10 rounded-2xl p-4 bg-surface hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-pointer">
       <div className="w-full h-64 rounded-xl overflow-hidden relative shrink-0">
+        {room.isVerified && (
+          <div className="absolute top-4 left-4 z-10 px-3 py-1.5 bg-primary/90 backdrop-blur-md text-background text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center gap-1.5 border border-white/20">
+             <div className="w-2 h-2 bg-accent rounded-full animate-pulse" /> Verified
+          </div>
+        )}
         <img 
           src={room.image || defaultImage} 
           alt={room.title}

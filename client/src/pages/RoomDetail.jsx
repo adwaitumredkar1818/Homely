@@ -95,7 +95,14 @@ export default function RoomDetail() {
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back to search
         </Link>
-        <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-4">{room.title}</h1>
+        <div className="flex items-center gap-4 mb-4">
+          <h1 className="text-3xl sm:text-4xl font-bold text-primary">{room.title}</h1>
+          {room.isVerified && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-accent/20 text-accent rounded-full text-[10px] font-black uppercase tracking-widest border border-accent/30">
+              <Shield className="w-3.5 h-3.5" /> Verified
+            </div>
+          )}
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center text-sm font-medium">
             <Star className="w-4 h-4 fill-current text-gray-800 mr-1" />
@@ -140,7 +147,7 @@ export default function RoomDetail() {
         {/* Left Column (Details) */}
         <div className="flex-1">
           <div className="pb-8 border-b border-gray-200">
-            <h2 className="text-2xl font-semibold mb-2">Hosted by RoomFinder Verified</h2>
+            <h2 className="text-2xl font-semibold mb-2">Hosted by {room.host?.name || 'Verified Host'}</h2>
             <p className="text-gray-500">2 guests · 1 bedroom · 1 bed · 1 private bath</p>
           </div>
           
@@ -148,8 +155,8 @@ export default function RoomDetail() {
             <div className="flex gap-4">
               <Shield className="w-6 h-6 text-gray-400 shrink-0" />
               <div>
-                <h3 className="font-semibold text-lg">Premium Verification</h3>
-                <p className="text-gray-500 text-sm">This host has completed rigorous background checks.</p>
+                <h3 className="font-semibold text-lg">{room.isVerified ? 'Premium Verification' : 'Verified Host'}</h3>
+                <p className="text-gray-500 text-sm">{room.isVerified ? 'This host has completed rigorous background and property checks.' : 'Identity verified through student portal.'}</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -328,6 +335,17 @@ export default function RoomDetail() {
                   value={reviewData.comment}
                   onChange={(e) => setReviewData({...reviewData, comment: e.target.value})}
                 ></textarea>
+                
+                <div className="mb-6">
+                  <label className="block text-sm font-bold text-taupe mb-2">Add a photo (optional URL)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter image URL (e.g. from Google Drive or Cloudinary)"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-primary text-sm"
+                    value={reviewData.imageUrl || ''}
+                    onChange={(e) => setReviewData({...reviewData, imageUrl: e.target.value})}
+                  />
+                </div>
                 <div className="flex gap-4">
                   <button 
                     onClick={async () => {
@@ -374,6 +392,12 @@ export default function RoomDetail() {
                 </div>
               </div>
               <p className="text-primary leading-relaxed">{rev.comment}</p>
+              
+              {rev.imageUrl && (
+                <div className="mt-4 rounded-2xl overflow-hidden border border-white/10 max-w-sm">
+                  <img src={rev.imageUrl} alt="Review" className="w-full h-48 object-cover hover:scale-105 transition-transform cursor-pointer" />
+                </div>
+              )}
               
               {rev.hostResponse && (
                 <div className="ml-8 mt-4 p-4 bg-primary/5 border-l-4 border-primary rounded-r-xl">
