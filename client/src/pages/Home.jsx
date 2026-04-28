@@ -13,6 +13,7 @@ export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [activeMode, setActiveMode] = useState('rooms'); // 'rooms' or 'messes'
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
   const [messes, setMesses] = useState([]);
   const { user } = useAuth();
 
@@ -49,6 +50,15 @@ export default function Home() {
     };
     if (currentSearch) newParams.search = currentSearch;
     if (filters.amenities.length > 0) newParams.amenities = filters.amenities.join(',');
+    
+    // Proximity Filters
+    if (filters.college !== 'None') {
+      newParams.college = filters.college;
+      newParams.collegeLat = filters.collegeLocation.lat.toString();
+      newParams.collegeLng = filters.collegeLocation.lng.toString();
+      newParams.maxDistance = filters.maxDistance.toString();
+    }
+
     setSearchParams(newParams);
   };
 
@@ -56,7 +66,9 @@ export default function Home() {
     maxPrice: parseInt(searchParams.get('maxPrice')) || 30000,
     minRating: parseInt(searchParams.get('minRating')) || 0,
     minReviews: parseInt(searchParams.get('minReviews')) || 0,
-    amenities: searchParams.get('amenities') ? searchParams.get('amenities').split(',') : []
+    amenities: searchParams.get('amenities') ? searchParams.get('amenities').split(',') : [],
+    college: searchParams.get('college') || 'None',
+    maxDistance: parseFloat(searchParams.get('maxDistance')) || 5
   };
 
   return (
@@ -97,13 +109,27 @@ export default function Home() {
               : 'Quality homemade meals delivered to your doorstep or available for dine-in.'}
           </p>
         </div>
-        <button 
-           onClick={() => setIsFilterModalOpen(true)}
-           className="flex items-center justify-center gap-2 px-6 py-4 bg-surface border border-gray-200 dark:border-white/10 rounded-xl shadow-sm hover:shadow-md hover:border-accent transition-all text-primary font-bold w-full md:w-auto shrink-0"
-        >
-          <SlidersHorizontal className="w-5 h-5 text-accent" />
-          Filter Properties
-        </button>
+
+        <div className="flex gap-4 w-full md:w-auto">
+          <button 
+            onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-primary text-background rounded-xl font-bold shadow-lg hover:bg-black transition-all"
+          >
+            {viewMode === 'list' ? (
+              <><MapPin className="w-5 h-5" /> Show Map</>
+            ) : (
+              <><SlidersHorizontal className="w-5 h-5" /> Show List</>
+            )}
+          </button>
+          
+          <button 
+             onClick={() => setIsFilterModalOpen(true)}
+             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-surface border border-gray-200 dark:border-white/10 rounded-xl shadow-sm hover:shadow-md hover:border-accent transition-all text-primary font-bold"
+          >
+            <SlidersHorizontal className="w-5 h-5 text-accent" />
+            Filters
+          </button>
+        </div>
       </div>
 
       <FilterModal 
@@ -113,25 +139,38 @@ export default function Home() {
         onApply={handleApplyFilters}
       />
       
-      {(activeMode === 'rooms' ? rooms : messes).length === 0 && !loading ? (
-        <div className="flex flex-col justify-center items-center h-64 text-center">
-           <p className="text-2xl text-primary font-bold mb-2">No {activeMode} found</p>
-           <p className="text-gray-500">Try adjusting your search location or term to find more options.</p>
-        </div>
+      {viewMode === 'list' ? (
+        (activeMode === 'rooms' ? rooms : messes).length === 0 && !loading ? (
+          <div className="flex flex-col justify-center items-center h-64 text-center">
+             <p className="text-2xl text-primary font-bold mb-2">No {activeMode} found</p>
+             <p className="text-gray-500">Try adjusting your search location or term to find more options.</p>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 transition-opacity duration-500`}>
+            {activeMode === 'rooms' 
+              ? rooms.map((room, idx) => (
+                  <div key={`${room.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
+                    <RoomCard room={room} />
+                  </div>
+                ))
+              : messes.map((mess, idx) => (
+                  <div key={`${mess.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
+                    <MessCard mess={mess} />
+                  </div>
+                ))
+            }
+          </div>
+        )
       ) : (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 transition-opacity duration-500`}>
-          {activeMode === 'rooms' 
-            ? rooms.map((room, idx) => (
-                <div key={`${room.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
-                  <RoomCard room={room} />
-                </div>
-              ))
-            : messes.map((mess, idx) => (
-                <div key={`${mess.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
-                  <MessCard mess={mess} />
-                </div>
-              ))
-          }
+        <div className="w-full h-[600px] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl relative">
+           <Map 
+             rooms={activeMode === 'rooms' ? rooms : messes.map(m => ({ ...m, title: m.name }))} 
+             collegeLocation={currentFilters.college !== 'None' ? { 
+               lat: parseFloat(searchParams.get('collegeLat')), 
+               lng: parseFloat(searchParams.get('collegeLng')),
+               name: searchParams.get('college')
+             } : null}
+           />
         </div>
       )}
 

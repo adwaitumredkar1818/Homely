@@ -2,13 +2,25 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, SlidersHorizontal } from 'lucide-react';
 
-const COMMON_AMENITIES = ['Wi-Fi', 'AC', 'Laundry', 'Security', 'Food', 'Parking', 'Gym', 'Study Room'];
+const COMMON_AMENITIES = ['Wi-Fi', 'AC', 'Laundry', 'Security', 'Food', 'Parking', 'Gym', 'Study Room', 'Library', 'Power Backup'];
+
+const PUNE_COLLEGES = [
+  { name: 'None', lat: null, lng: null },
+  { name: 'COEP Technological University', lat: 18.5312, lng: 73.8553 },
+  { name: 'Fergusson College', lat: 18.5226, lng: 73.8390 },
+  { name: 'Symbiosis International University', lat: 18.5516, lng: 73.8235 },
+  { name: 'VIT Pune', lat: 18.4636, lng: 73.8683 },
+  { name: 'MIT World Peace University', lat: 18.5181, lng: 73.8151 },
+  { name: 'Savitribai Phule Pune University', lat: 18.5524, lng: 73.8245 }
+];
 
 export default function FilterModal({ isOpen, onClose, initialFilters, onApply }) {
   const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice || 30000);
   const [minRating, setMinRating] = useState(initialFilters.minRating || 0);
   const [minReviews, setMinReviews] = useState(initialFilters.minReviews || 0);
   const [selectedAmenities, setSelectedAmenities] = useState(initialFilters.amenities || []);
+  const [selectedCollege, setSelectedCollege] = useState(initialFilters.college || 'None');
+  const [maxDistance, setMaxDistance] = useState(initialFilters.maxDistance || 5); // km
 
   useEffect(() => {
     if (isOpen) {
@@ -16,6 +28,8 @@ export default function FilterModal({ isOpen, onClose, initialFilters, onApply }
       setMinRating(initialFilters.minRating || 0);
       setMinReviews(initialFilters.minReviews || 0);
       setSelectedAmenities(initialFilters.amenities || []);
+      setSelectedCollege(initialFilters.college || 'None');
+      setMaxDistance(initialFilters.maxDistance || 5);
     }
   }, [isOpen, initialFilters]);
 
@@ -28,11 +42,15 @@ export default function FilterModal({ isOpen, onClose, initialFilters, onApply }
   };
 
   const handleApply = () => {
+    const college = PUNE_COLLEGES.find(c => c.name === selectedCollege);
     onApply({
       maxPrice,
       minRating,
       minReviews,
-      amenities: selectedAmenities
+      amenities: selectedAmenities,
+      college: selectedCollege,
+      collegeLocation: college?.lat ? { lat: college.lat, lng: college.lng } : null,
+      maxDistance
     });
     onClose();
   };
@@ -42,6 +60,8 @@ export default function FilterModal({ isOpen, onClose, initialFilters, onApply }
     setMinRating(0);
     setMinReviews(0);
     setSelectedAmenities([]);
+    setSelectedCollege('None');
+    setMaxDistance(5);
   };
 
   return createPortal(
@@ -61,6 +81,38 @@ export default function FilterModal({ isOpen, onClose, initialFilters, onApply }
 
         <div className="flex-1 space-y-8 overflow-y-auto pb-4">
           
+          {/* College Selection */}
+          <div>
+            <label className="block text-sm font-bold text-primary mb-3">Your College / Campus</label>
+            <select 
+              value={selectedCollege}
+              onChange={(e) => setSelectedCollege(e.target.value)}
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-background border border-white/10 rounded-xl text-primary font-medium outline-none focus:ring-2 focus:ring-accent"
+            >
+              {PUNE_COLLEGES.map(college => (
+                <option key={college.name} value={college.name}>{college.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Distance Slider */}
+          {selectedCollege !== 'None' && (
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <label className="block text-sm font-bold text-primary mb-4">
+                Distance to College: <span className="text-accent text-lg">within {maxDistance} km</span>
+              </label>
+              <input 
+                 type="range" min="0.5" max="15" step="0.5" 
+                 value={maxDistance} onChange={e => setMaxDistance(parseFloat(e.target.value))} 
+                 className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-accent" 
+              />
+              <div className="flex justify-between text-xs text-taupe mt-2 font-medium">
+                 <span>0.5 km</span>
+                 <span>15 km</span>
+              </div>
+            </div>
+          )}
+
           {/* Price Range */}
           <div>
             <label className="block text-sm font-bold text-primary mb-4">
@@ -91,17 +143,6 @@ export default function FilterModal({ isOpen, onClose, initialFilters, onApply }
                  </button>
                ))}
             </div>
-          </div>
-
-          {/* Reviews */}
-          <div>
-            <label className="block text-sm font-bold text-primary mb-2">Minimum Reviews</label>
-             <input 
-               type="number" min="0" max="500"
-               value={minReviews || ''} onChange={e => setMinReviews(parseInt(e.target.value) || 0)} 
-               placeholder="e.g. 50"
-               className="w-full px-4 py-3 bg-gray-50 dark:bg-background border border-white/10 rounded-xl focus:ring-2 focus:ring-accent focus:border-accent text-primary"
-             />
           </div>
 
           {/* Amenities */}

@@ -15,6 +15,7 @@ export default function RoomDetail() {
     cleanliness: 5, accuracy: 5, communication: 5, location: 5, value: 5, comment: ''
   });
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,7 +40,21 @@ export default function RoomDetail() {
         console.error(err);
         setLoading(false);
       });
-  }, [id, user]);
+
+    // Check wishlist status
+    if (user && token) {
+      fetch('http://localhost:5000/api/wishlist', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const inWishlist = data.some(item => item.roomId === parseInt(id));
+          setIsWishlisted(inWishlist);
+        }
+      });
+    }
+  }, [id, user, token]);
 
   if (loading) return <div className="text-center py-20 animate-pulse text-xl font-bold text-primary">Loading property details from server...</div>;
   if (!room) return (
@@ -69,6 +84,30 @@ export default function RoomDetail() {
         setIsBooked(true);
       } else {
         alert(data.error || 'Failed to book meeting.');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      navigate('/auth', { state: { from: location.pathname } });
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:5000/api/wishlist/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ roomId: room.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsWishlisted(data.action === 'added');
       }
     } catch (err) {
       console.error(err);
@@ -115,8 +154,11 @@ export default function RoomDetail() {
             <button className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
               <Share className="w-4 h-4" /> Share
             </button>
-            <button className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors">
-              <Heart className="w-4 h-4" /> Save
+            <button 
+              onClick={handleToggleWishlist}
+              className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${isWishlisted ? 'text-red-500 bg-red-50' : 'text-primary hover:bg-gray-50'}`}
+            >
+              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} /> {isWishlisted ? 'Saved' : 'Save'}
             </button>
           </div>
         </div>

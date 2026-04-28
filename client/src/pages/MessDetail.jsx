@@ -11,6 +11,7 @@ export default function MessDetail() {
   const [loading, setLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const { user, token } = useAuth();
 
   useEffect(() => {
@@ -27,7 +28,21 @@ export default function MessDetail() {
         console.error(err);
         setLoading(false);
       });
-  }, [id]);
+
+    // Check wishlist status
+    if (user && token) {
+      fetch('http://localhost:5000/api/wishlist', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const inWishlist = data.some(item => item.messId === parseInt(id));
+          setIsWishlisted(inWishlist);
+        }
+      });
+    }
+  }, [id, user, token]);
 
   const handleSubscribe = async () => {
     if (!user) {
@@ -55,6 +70,30 @@ export default function MessDetail() {
       console.error(err);
     } finally {
       setIsSubscribing(false);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      navigate('/auth', { state: { from: window.location.pathname } });
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:5000/api/wishlist/toggle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ messId: mess.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsWishlisted(data.action === 'added');
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -104,8 +143,11 @@ export default function MessDetail() {
             <button className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-white/5 px-3 py-1.5 rounded-lg transition-colors border border-white/10">
               <Share className="w-4 h-4" /> Share
             </button>
-            <button className="flex items-center gap-2 text-sm font-medium text-primary hover:bg-white/5 px-3 py-1.5 rounded-lg transition-colors border border-white/10">
-              <Heart className="w-4 h-4" /> Save
+            <button 
+              onClick={handleToggleWishlist}
+              className={`flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors border border-white/10 ${isWishlisted ? 'text-red-500 bg-red-500/10' : 'text-primary hover:bg-white/5'}`}
+            >
+              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} /> {isWishlisted ? 'Saved' : 'Save'}
             </button>
           </div>
         </div>

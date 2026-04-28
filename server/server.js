@@ -5,6 +5,20 @@ const { PrismaClient } = require('@prisma/client');
 const http = require('http');
 const { Server } = require('socket.io');
 
+// --- HELPERS ---
+function getDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -89,7 +103,8 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
         bookings: { include: { room: { include: { images: true } } } },
         messBookings: { include: { mess: { include: { images: true } } } },
         rooms: { include: { images: true } },
-        messes: { include: { images: true, reviews: { include: { user: true } } } }
+        messes: { include: { images: true, reviews: { include: { user: true } } } },
+        wishlist: { include: { room: { include: { images: true } }, mess: { include: { images: true } } } }
       }
     });
 
@@ -269,6 +284,17 @@ app.get('/api/rooms', async (req, res) => {
       );
     }
 
+    if (collegeLat && collegeLng && maxDistance) {
+      const cLat = parseFloat(collegeLat);
+      const cLng = parseFloat(collegeLng);
+      const mDist = parseFloat(maxDistance);
+      mappedRooms = mappedRooms.filter(r => {
+        const dist = getDistance(cLat, cLng, r.lat, r.lng);
+        r.distanceToCollege = parseFloat(dist.toFixed(2));
+        return dist <= mDist;
+      });
+    }
+
     res.json(mappedRooms);
   } catch (error) {
     console.error('Error fetching rooms:', error);
@@ -403,7 +429,7 @@ app.post('/api/rooms', authenticateToken, async (req, res) => {
 
 // Get all messes with optional search
 app.get('/api/messes', async (req, res) => {
-  const { search, type } = req.query;
+  const { search, type, collegeLat, collegeLng, maxDistance } = req.query;
   try {
     const where = {};
     if (search) {
@@ -439,6 +465,17 @@ app.get('/api/messes', async (req, res) => {
         reviewCount: reviewCount || (5 + (m.id * 7) % 50)
       };
     });
+
+    if (collegeLat && collegeLng && maxDistance) {
+      const cLat = parseFloat(collegeLat);
+      const cLng = parseFloat(collegeLng);
+      const mDist = parseFloat(maxDistance);
+      mappedMesses = mappedMesses.filter(m => {
+        const dist = getDistance(cLat, cLng, m.lat, m.lng);
+        m.distanceToCollege = parseFloat(dist.toFixed(2));
+        return dist <= mDist;
+      });
+    }
 
     res.json(mappedMesses);
   } catch (error) {
@@ -603,6 +640,7 @@ app.post('/api/rooms/:id/reviews', authenticateToken, async (req, res) => {
         value,
         overallRating,
         comment,
+        imageUrl: req.body.imageUrl || null,
         userId: req.user.id,
         roomId
       }
@@ -720,6 +758,65 @@ app.post('/api/messages', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// --- WISHLIST SYSTEM ---
+app.get('/api/wishlist', authenticateToken, async (req, res) => {
+  try {
+    const wishlist = await prisma.wishlist.findMany({
+      where: { userId: req.user.id },
+      include: {
+        room: { 
+          include: { 
+            images: true, 
+            host: { select: { name: true } }, 
+            reviews: true 
+          } 
+        },
+        mess: { 
+          include: { 
+            images: true, 
+            host: { select: { name: true } }, 
+            reviews: true 
+          } 
+        }
+      }
+    });
+    res.json(wishlist);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch wishlist' });
+  }
+});
+
+app.post('/api/wishlist/toggle', authenticateToken, async (req, res) => {
+  const { roomId, messId } = req.body;
+  try {
+    const existing = await prisma.wishlist.findFirst({
+      where: {
+        userId: req.user.id,
+        roomId: roomId ? parseInt(roomId) : null,
+        messId: messId ? parseInt(messId) : null
+      }
+    });
+
+    if (existing) {
+      await prisma.wishlist.delete({ where: { id: existing.id } });
+      return res.json({ success: true, action: 'removed' });
+    } else {
+      await prisma.wishlist.create({
+        data: {
+          userId: req.user.id,
+          roomId: roomId ? parseInt(roomId) : null,
+          messId: messId ? parseInt(messId) : null
+        }
+      });
+      return res.json({ success: true, action: 'added' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to toggle wishlist' });
   }
 });
 

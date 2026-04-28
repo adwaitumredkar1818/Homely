@@ -139,10 +139,10 @@ export default function Profile() {
                 </div>
                 <div className="p-4 bg-background rounded-2xl border border-white/5">
                   <p className="text-2xl font-bold text-primary">
-                    {isHost ? (profileData?.inboundBookings?.length || 0) : 0}
+                    {isHost ? (profileData?.inboundBookings?.length || 0) : (profileData?.wishlist?.length || 0)}
                   </p>
                   <p className="text-xs font-bold text-taupe uppercase tracking-wider">
-                    {isHost ? 'Reservations' : 'Reviews'}
+                    {isHost ? 'Reservations' : 'Wishlist'}
                   </p>
                 </div>
                 {isHost && (
@@ -344,6 +344,59 @@ export default function Profile() {
                   )}
                 </div>
               </div>
+
+              {/* Wishlist Section */}
+              {!isHost && (
+                <div className="mt-12 pt-12 border-t border-white/10">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-2xl font-bold text-primary">Saved for Later</h3>
+                    <div className="flex items-center gap-2 text-xs font-bold text-taupe uppercase tracking-widest">
+                      <Heart className="w-4 h-4 text-red-500 fill-current" /> {profileData?.wishlist?.length || 0} items
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {profileData?.wishlist?.length > 0 ? (
+                      profileData.wishlist.map((item) => {
+                        const target = item.room || item.mess;
+                        const type = item.room ? 'room' : 'mess';
+                        return (
+                          <Link 
+                            key={item.id}
+                            to={type === 'room' ? `/room/${target.id}` : `/home`}
+                            className="group bg-background rounded-[2rem] border border-white/5 overflow-hidden hover:border-accent/30 transition-all hover:shadow-2xl"
+                          >
+                            <div className="aspect-video relative overflow-hidden">
+                               <img 
+                                 src={target.images?.[0]?.url || (type === 'room' ? `/assets/rooms/student_room_${(target.id % 15) + 1}.png` : `/assets/messes/mess_${(target.id % 5) + 1}.png`)} 
+                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                 alt="" 
+                               />
+                               <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-md p-2 rounded-full text-red-500 shadow-lg">
+                                  <Heart className="w-4 h-4 fill-current" />
+                               </div>
+                            </div>
+                            <div className="p-6">
+                               <h4 className="text-lg font-bold text-primary mb-1 group-hover:text-accent transition-colors truncate">{target.title || target.name}</h4>
+                               <p className="text-xs text-taupe mb-4 flex items-center gap-1 font-medium truncate">
+                                 <MapPin className="w-3 h-3" /> {target.location}
+                               </p>
+                               <div className="flex items-center justify-between">
+                                  <span className="text-primary font-bold">₹{target.price?.toLocaleString()}</span>
+                                  <span className="text-[10px] font-black uppercase text-taupe px-2 py-1 bg-surface rounded-lg">{type}</span>
+                               </div>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <div className="sm:col-span-2 text-center py-12 bg-background rounded-3xl border border-dashed border-white/10">
+                        <p className="text-taupe font-bold text-sm">Your wishlist is empty. Start saving your favorite places!</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

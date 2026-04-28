@@ -25,7 +25,12 @@ export default function RoomCard({ room }) {
       <div className="flex-1 flex flex-col justify-between">
         <div>
           <div className="flex justify-between items-start mb-2">
-            <span className="text-sm font-medium text-taupe">{room.location}</span>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-taupe">{room.location}</span>
+              {room.distanceToCollege && (
+                <span className="text-xs font-bold text-accent">{room.distanceToCollege} km to campus</span>
+              )}
+            </div>
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 fill-accent text-accent" />
               <span className="text-sm font-bold text-primary">{room.rating}</span>
