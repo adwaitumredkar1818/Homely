@@ -14,16 +14,22 @@ model User {
   name      String
   role      String    @default("TENANT")
   createdAt DateTime  @default(now())
-  
+  // Trust & Verification
+  isVerified      Boolean   @default(false)
+  idProofUrl      String?
+  studentIdUrl    String?
+
   // Relations
   rooms     Room[]    @relation("UserRooms")
   bookings  Booking[] @relation("UserBookings")
   sentMessages      Message[] @relation("SentMessages")
   receivedMessages  Message[] @relation("ReceivedMessages")
   reviews   Review[]
-  messes        Mess[]    // Added: Host can own messes
+  messes        Mess[]
   messBookings  MessSubscription[]
   messReviews   MessReview[]
+  wishlist      Wishlist[]
+  maintenanceRequests MaintenanceRequest[]
 }
 
 model Room {
@@ -36,6 +42,7 @@ model Room {
   lng         Float
   amenities   String
   messes      String   @default("[]")
+  isVerified  Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   // Relations
@@ -44,7 +51,9 @@ model Room {
   images      Image[]
   bookings    Booking[]
   reviews     Review[]
-  nearbyMesses Mess[]   @relation("RoomMesses") // Added: M-N relation to standalone Mess entity
+  nearbyMesses Mess[]   @relation("RoomMesses")
+  wishlist     Wishlist[]
+  maintenanceRequests MaintenanceRequest[]
 }
 
 model Image {
@@ -89,6 +98,7 @@ model Review {
   value          Int      @default(5)
   overallRating  Float
   comment        String
+  imageUrl       String?
   hostResponse   String?
   createdAt      DateTime @default(now())
 
@@ -108,6 +118,7 @@ model Mess {
   lat         Float
   lng         Float
   type        String   @default("VEG") // VEG, NON_VEG, BOTH
+  isVerified  Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   // Relations
@@ -117,6 +128,7 @@ model Mess {
   subscriptions MessSubscription[]
   hostId        Int
   host          User               @relation(fields: [hostId], references: [id])
+  wishlist      Wishlist[]
 }
 
 model MessImage {
@@ -148,6 +160,7 @@ model MessReview {
   value          Int      @default(5)
   overallRating  Float
   comment        String
+  imageUrl       String?
   hostResponse   String?
   createdAt      DateTime @default(now())
 
@@ -156,4 +169,29 @@ model MessReview {
   user           User     @relation(fields: [userId], references: [id])
   messId         Int
   mess           Mess     @relation(fields: [messId], references: [id], onDelete: Cascade)
+}
+
+model MaintenanceRequest {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  status      String   @default("PENDING") // PENDING, IN_PROGRESS, RESOLVED
+  priority    String   @default("MEDIUM")  // LOW, MEDIUM, HIGH
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  roomId      Int?
+  room        Room?    @relation(fields: [roomId], references: [id])
+}
+
+model Wishlist {
+  id      Int  @id @default(autoincrement())
+  userId  Int
+  user    User @relation(fields: [userId], references: [id])
+  roomId  Int?
+  room    Room? @relation(fields: [roomId], references: [id])
+  messId  Int?
+  mess    Mess? @relation(fields: [messId], references: [id])
 }
