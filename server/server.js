@@ -143,6 +143,26 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
       });
     }
 
+    // Monthly revenue breakdown for Landlords
+    let monthlyStats = [];
+    if (user.role === 'HOST') {
+      const allConfirmedItems = [
+        ...inboundBookings.filter(b => b.status === 'CONFIRMED').map(b => ({ date: b.createdAt, amount: b.totalPrice })),
+        ...inboundSubscriptions.filter(s => s.status === 'CONFIRMED').map(s => ({ date: s.createdAt, amount: s.totalPrice }))
+      ];
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const statsMap = {};
+      
+      allConfirmedItems.forEach(item => {
+        const d = new Date(item.date);
+        const monthName = months[d.getMonth()];
+        statsMap[monthName] = (statsMap[monthName] || 0) + item.amount;
+      });
+
+      monthlyStats = months.map(m => ({ month: m, revenue: statsMap[m] || 0 }));
+    }
+
     res.json({
       user: { id: user.id, name: user.name, email: user.email, role: user.role },
       myBookings: [
@@ -154,7 +174,8 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
       inboundBookings: [
         ...inboundBookings.map(b => ({ ...b, type: 'ROOM' })),
         ...inboundSubscriptions.map(s => ({ ...s, type: 'MESS', room: s.mess, roomId: s.messId }))
-      ]
+      ],
+      monthlyStats
     });
   } catch (error) {
     console.error(error);

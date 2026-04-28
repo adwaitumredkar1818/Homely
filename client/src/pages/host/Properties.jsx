@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export default function Properties() {
   const [properties, setProperties] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL'); // ALL, BOOKED, FREE
   const { token } = useAuth();
@@ -21,6 +22,9 @@ export default function Properties() {
       const data = await res.json();
       if (data.myListings) {
         setProperties(data.myListings);
+      }
+      if (data.monthlyStats) {
+        setMonthlyStats(data.monthlyStats);
       }
     } catch (err) {
       console.error('Failed to fetch properties:', err);
@@ -97,6 +101,48 @@ export default function Properties() {
             </div>
          </div>
       </div>
+
+      {/* Monthly Revenue Breakdown (Chart) */}
+      <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-2xl space-y-8 animate-in fade-in zoom-in duration-1000">
+         <div className="flex justify-between items-end">
+           <div>
+             <h2 className="text-2xl font-black text-primary mb-1">Revenue Breakdown</h2>
+             <p className="text-taupe text-sm font-bold">Month-over-month financial insights.</p>
+           </div>
+           <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl text-xs font-black uppercase tracking-widest">
+             <TrendingUp className="w-4 h-4" />
+             Growth Tracking
+           </div>
+         </div>
+ 
+         <div className="h-64 flex items-end gap-2 md:gap-4 pt-10">
+           {monthlyStats.map((stat, idx) => {
+             const maxRevenue = Math.max(...monthlyStats.map(s => s.revenue), 1);
+             const height = (stat.revenue / maxRevenue) * 100;
+             
+             return (
+               <div key={idx} className="flex-1 flex flex-col items-center gap-4 group h-full justify-end">
+                 <div className="relative w-full flex flex-col items-center justify-end h-full">
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-4 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 bg-black text-white px-3 py-2 rounded-xl text-[10px] font-black whitespace-nowrap z-10 pointer-events-none shadow-xl">
+                       ₹{stat.revenue.toLocaleString('en-IN')}
+                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-black" />
+                    </div>
+                    
+                    {/* Bar */}
+                    <div 
+                       className="w-full bg-gray-50 rounded-t-xl group-hover:bg-primary transition-all duration-500 cursor-help relative overflow-hidden" 
+                       style={{ height: `${height}%`, minHeight: stat.revenue > 0 ? '8px' : '2px' }}
+                    >
+                       <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                 </div>
+                 <span className="text-[10px] font-black text-taupe group-hover:text-primary transition-colors">{stat.month}</span>
+               </div>
+             );
+           })}
+         </div>
+       </div>
 
       {/* Availability Toggle & Search */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 bg-white/50 p-4 rounded-[2rem] border border-gray-100">
