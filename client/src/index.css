@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --primary: #3e3633;
+  --primary-light: #51575b;
+  --accent: #694230;
+  --background: #f4f0e8;
+  --surface: #ffffff;
+  --text-main: #3e3633;
+  --text-muted: #8f8074;
+  --border: rgba(143, 128, 116, 0.3);
+}
+
+.dark {
+  --primary: #f4f0e8;
+  --primary-light: #d1d5db;
+  --accent: #ae9884;
+  --background: #373c43;
+  --surface: #434a52;
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.1);
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-accent-hover: #000000;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  
+  --color-taupe: var(--text-muted);
+  --color-taupe-light: #ae9884;
+  --color-black: #000000;
+
+  --font-sans: 'Inter', sans-serif;
+}
+
+body {
+  @apply bg-background text-primary transition-colors duration-300;
+}
+
+/* Cinematic Bloom Discovery Transition */
+.animate-bloom {
+  animation: cinematicBloom 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes cinematicBloom {
+  0% {
+    transform: scale(0.97);
+    filter: blur(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
