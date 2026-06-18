@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Menu, User, LogOut, LayoutDashboard, Moon, Sun, MessageSquare } from 'lucide-react';
+import { Search, Menu, User, LogOut, LayoutDashboard, Moon, Sun, MessageSquare, Sparkles, CreditCard } from 'lucide-react';
 import CreatePropertyModal from '../CreatePropertyModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -83,14 +83,29 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
-            {user?.role === 'HOST' && (
+            {user?.role === 'HOST' ? (
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
               >
                 List property
               </button>
-            )}
+            ) : user ? (
+              <div className="flex items-center gap-4">
+                <Link 
+                  to="/roommates"
+                  className="text-primary font-bold hover:text-accent transition-colors px-2 pb-0.5 flex items-center gap-2"
+                >
+                  Roommates <Sparkles className="w-4 h-4 text-accent" />
+                </Link>
+                <Link 
+                  to="/finance"
+                  className="text-primary font-bold hover:text-accent transition-colors px-2 pb-0.5 flex items-center gap-2"
+                >
+                  Finance <CreditCard className="w-4 h-4 text-accent" />
+                </Link>
+              </div>
+            ) : null}
 
             <div className="relative">
               <button 

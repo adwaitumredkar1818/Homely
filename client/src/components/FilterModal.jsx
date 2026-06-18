@@ -14,7 +14,7 @@ const PUNE_COLLEGES = [
   { name: 'Savitribai Phule Pune University', lat: 18.5524, lng: 73.8245 }
 ];
 
-export default function FilterModal({ isOpen, onClose, initialFilters, onApply }) {
+export default function FilterModal({ isOpen, onClose, initialFilters, onApply, activeMode }) {
   const [maxPrice, setMaxPrice] = useState(initialFilters.maxPrice || 30000);
   const [minRating, setMinRating] = useState(initialFilters.minRating || 0);
   const [minReviews, setMinReviews] = useState(initialFilters.minReviews || 0);
@@ -146,20 +146,22 @@ export default function FilterModal({ isOpen, onClose, initialFilters, onApply }
           </div>
 
           {/* Amenities */}
-          <div>
-            <label className="block text-sm font-bold text-primary mb-3">Required Amenities</label>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {COMMON_AMENITIES.map(amenity => (
-                 <button 
-                   key={amenity}
-                   onClick={() => handleToggleAmenity(amenity)}
-                   className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${selectedAmenities.includes(amenity) ? 'bg-primary text-background' : 'bg-taupe-light/20 text-primary hover:bg-taupe-light/40'}`}
-                 >
-                   {amenity}
-                 </button>
-              ))}
+          {activeMode === 'rooms' && (
+            <div>
+              <label className="block text-sm font-bold text-primary mb-3">Required Amenities</label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {COMMON_AMENITIES.map(amenity => (
+                   <button 
+                     key={amenity}
+                     onClick={() => handleToggleAmenity(amenity)}
+                     className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors ${selectedAmenities.includes(amenity) ? 'bg-primary text-background' : 'bg-taupe-light/20 text-primary hover:bg-taupe-light/40'}`}
+                   >
+                     {amenity}
+                   </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 

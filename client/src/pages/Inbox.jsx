@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Send, Search, User, Loader2, MessageSquare, Clock, ShieldCheck, ChevronLeft, Phone, MoreVertical } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
+import API_URL from '../utils/api';
 
 export default function Inbox() {
   const [conversations, setConversations] = useState([]);
@@ -24,7 +25,7 @@ export default function Inbox() {
       const initialUserId = location.state?.userId;
       if (initialUserId) {
         try {
-          const res = await fetch(`http://localhost:5000/api/user/${initialUserId}`, {
+          const res = await fetch(`${API_URL}/api/user/${initialUserId}`, {
              headers: { 'Authorization': `Bearer ${token}` }
           });
           const otherUser = await res.json();
@@ -43,7 +44,7 @@ export default function Inbox() {
       initInbox();
       
       // Socket setup
-      socketRef.current = io('http://localhost:5000');
+      socketRef.current = io(API_URL);
       socketRef.current.emit('join', `user_${user.id}`);
       
       socketRef.current.on('new_message', (message) => {
@@ -85,7 +86,7 @@ export default function Inbox() {
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/messages/conversations', {
+      const res = await fetch(`${API_URL}/api/messages/conversations`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -101,7 +102,7 @@ export default function Inbox() {
   const fetchMessages = async (otherUserId) => {
     setMsgLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/messages/${otherUserId}`, {
+      const res = await fetch(`${API_URL}/api/messages/${otherUserId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -121,7 +122,7 @@ export default function Inbox() {
     setNewMessage('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/messages', {
+      const res = await fetch(`${API_URL}/api/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -155,18 +156,18 @@ export default function Inbox() {
   );
 
   return (
-    <div className="h-[calc(100vh-160px)] flex bg-white rounded-[2.5rem] border border-gray-200 overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="h-[calc(100vh-160px)] flex bg-surface rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* Sidebar: Conversations List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-gray-100 flex flex-col bg-gray-50/30 ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-        <div className="p-6 border-b border-gray-100 bg-white/50 backdrop-blur-md sticky top-0 z-10">
+      <div className={`w-full md:w-80 lg:w-96 border-r border-white/5 flex flex-col bg-primary/5 ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        <div className="p-6 border-b border-white/5 bg-surface/50 backdrop-blur-md sticky top-0 z-10">
            <h2 className="text-2xl font-black text-primary mb-6">Inbox</h2>
            <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-taupe group-focus-within:text-accent transition-colors" />
               <input 
                 type="text" 
                 placeholder="Search conversations..." 
-                className="w-full pl-11 pr-4 py-3 bg-white border border-gray-100 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-accent/10 focus:border-accent/30 outline-none transition-all"
+                className="w-full pl-11 pr-4 py-3 bg-surface border border-white/10 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-accent/10 focus:border-accent/30 outline-none transition-all text-primary"
               />
            </div>
         </div>
@@ -176,10 +177,10 @@ export default function Inbox() {
            {selectedUser && !conversations.find(c => c.user.id === selectedUser.id) && (
               <button 
                 onClick={() => selectConversation(selectedUser)}
-                className="w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group bg-primary text-white shadow-xl shadow-primary/20 ring-1 ring-white/10"
+                className="w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group bg-primary text-background shadow-xl shadow-primary/20 ring-1 ring-white/10"
               >
                  <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center shrink-0 border border-white/20">
-                    <span className="text-lg font-black text-white">{selectedUser.name.charAt(0)}</span>
+                    <span className="text-lg font-black text-background">{selectedUser.name.charAt(0)}</span>
                  </div>
                  <div className="flex-1 text-left min-w-0">
                     <div className="flex justify-between items-start mb-1">
@@ -195,10 +196,10 @@ export default function Inbox() {
              <button 
                key={conv.user.id}
                onClick={() => selectConversation(conv.user)}
-               className={`w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group ${selectedUser?.id === conv.user.id ? 'bg-primary text-white shadow-xl shadow-primary/20 ring-1 ring-white/10' : 'hover:bg-white hover:shadow-lg hover:shadow-gray-200/50'}`}
+               className={`w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group ${selectedUser?.id === conv.user.id ? 'bg-primary text-background shadow-xl shadow-primary/20 ring-1 ring-white/10' : 'hover:bg-surface hover:shadow-lg hover:shadow-black/5'}`}
              >
                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center shrink-0 border border-white/20">
-                   <span className={`text-lg font-black ${selectedUser?.id === conv.user.id ? 'text-white' : 'text-accent'}`}>{conv.user.name.charAt(0)}</span>
+                   <span className={`text-lg font-black ${selectedUser?.id === conv.user.id ? 'text-background' : 'text-accent'}`}>{conv.user.name.charAt(0)}</span>
                 </div>
                 <div className="flex-1 text-left min-w-0">
                    <div className="flex justify-between items-start mb-1">
@@ -207,12 +208,12 @@ export default function Inbox() {
                          {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                    </div>
-                   <p className={`text-xs truncate font-medium ${selectedUser?.id === conv.user.id ? 'text-white/80' : 'text-taupe'}`}>
+                   <p className={`text-xs truncate font-medium ${selectedUser?.id === conv.user.id ? 'text-background/80' : 'text-taupe'}`}>
                       {conv.lastMessage.content}
                    </p>
                 </div>
                 {selectedUser?.id === conv.user.id && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-l-full" />
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-background rounded-l-full" />
                 )}
              </button>
            )) : !selectedUser && (
@@ -225,16 +226,16 @@ export default function Inbox() {
       </div>
 
       {/* Main Chat Window */}
-      <div className={`flex-1 flex flex-col bg-white ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
+      <div className={`flex-1 flex flex-col bg-surface ${selectedUser ? 'flex' : 'hidden md:flex'}`}>
          {selectedUser ? (
            <>
              {/* Chat Header */}
-             <div className="h-20 px-8 border-b border-gray-100 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-20">
+             <div className="h-20 px-8 border-b border-white/5 flex items-center justify-between bg-surface/80 backdrop-blur-md sticky top-0 z-20">
                 <div className="flex items-center gap-4">
-                   <button onClick={() => setSelectedUser(null)} className="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors">
+                   <button onClick={() => setSelectedUser(null)} className="md:hidden p-2 hover:bg-primary/10 rounded-full transition-colors">
                       <ChevronLeft className="w-6 h-6 text-primary" />
                    </button>
-                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold shadow-md">
+                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-background font-bold shadow-md">
                       {selectedUser.name.charAt(0)}
                    </div>
                    <div>
@@ -253,7 +254,7 @@ export default function Inbox() {
              </div>
 
              {/* Messages Area */}
-             <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-gray-50/20">
+             <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-primary/5">
                 {msgLoading ? (
                   <div className="flex items-center justify-center h-full">
                      <Loader2 className="w-8 h-8 text-accent animate-spin" />
@@ -261,7 +262,7 @@ export default function Inbox() {
                 ) : (
                   <>
                     <div className="text-center py-8">
-                       <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-gray-100 rounded-full text-[10px] font-black text-taupe uppercase tracking-wider shadow-sm">
+                       <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-surface border border-white/10 rounded-full text-[10px] font-black text-taupe uppercase tracking-wider shadow-sm">
                           <Clock className="w-3 h-3" /> Chat encryption active
                        </div>
                     </div>
@@ -269,9 +270,9 @@ export default function Inbox() {
                       const isMe = msg.senderId === user.id;
                       return (
                         <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                           <div className={`max-w-[75%] sm:max-w-[60%] p-5 rounded-3xl text-sm font-medium shadow-lg relative ${isMe ? 'bg-primary text-white rounded-br-none shadow-primary/20' : 'bg-white text-primary border border-gray-100 rounded-bl-none shadow-gray-200/30'}`}>
+                           <div className={`max-w-[75%] sm:max-w-[60%] p-5 rounded-3xl text-sm font-medium shadow-lg relative ${isMe ? 'bg-primary text-background rounded-br-none shadow-primary/20' : 'bg-surface text-primary border border-white/10 rounded-bl-none shadow-black/10'}`}>
                               {msg.content}
-                              <p className={`text-[10px] mt-2 font-bold opacity-50 ${isMe ? 'text-white text-right' : 'text-taupe'}`}>
+                              <p className={`text-[10px] mt-2 font-bold opacity-50 ${isMe ? 'text-background text-right' : 'text-taupe'}`}>
                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
                            </div>
@@ -292,8 +293,8 @@ export default function Inbox() {
              </div>
 
              {/* Input Area */}
-             <div className="p-6 bg-white border-t border-gray-100">
-                <form onSubmit={handleSendMessage} className="flex gap-4 p-2 bg-gray-50 rounded-[2rem] border border-gray-100 focus-within:border-accent/30 focus-within:ring-4 focus-within:ring-accent/5 transition-all">
+             <div className="p-6 bg-surface border-t border-white/5">
+                <form onSubmit={handleSendMessage} className="flex gap-4 p-2 bg-primary/5 rounded-[2rem] border border-white/5 focus-within:border-accent/30 focus-within:ring-4 focus-within:ring-accent/5 transition-all">
                    <input 
                      type="text" 
                      value={newMessage}
@@ -303,7 +304,7 @@ export default function Inbox() {
                    />
                    <button 
                      disabled={!newMessage.trim()}
-                     className="p-3 bg-primary text-white rounded-full hover:bg-accent transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95"
+                     className="p-3 bg-primary text-background rounded-full hover:bg-accent hover:text-white transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95"
                    >
                       <Send className="w-5 h-5" />
                    </button>
@@ -311,21 +312,21 @@ export default function Inbox() {
              </div>
            </>
          ) : (
-           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-gray-50/10">
+           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-primary/5">
               <div className="w-24 h-24 bg-accent/5 rounded-full flex items-center justify-center mb-8 relative">
                  <MessageSquare className="w-12 h-12 text-accent/20" />
-                 <div className="absolute top-0 right-0 w-6 h-6 bg-accent border-4 border-white rounded-full animate-pulse" />
+                 <div className="absolute top-0 right-0 w-6 h-6 bg-accent border-4 border-surface rounded-full animate-pulse" />
               </div>
               <h3 className="text-3xl font-black text-primary mb-4 tracking-tight">Your Communication Hub</h3>
               <p className="text-taupe font-medium max-w-sm mx-auto leading-relaxed">
                  Select a tenant or property owner from the list on the left to start coordinating bookings and inquiries.
               </p>
-              <div className="mt-12 flex items-center gap-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <div className="mt-12 flex items-center gap-6 p-4 bg-surface rounded-2xl border border-white/10 shadow-sm">
                  <div className="flex items-center gap-2">
                     <ShieldCheck className="w-5 h-5 text-green-500" />
                     <span className="text-[10px] font-black text-taupe uppercase tracking-widest">End-to-End Encrypted</span>
                  </div>
-                 <div className="w-px h-4 bg-gray-200" />
+                 <div className="w-px h-4 bg-white/10" />
                  <div className="flex items-center gap-2">
                     <Clock className="w-5 h-5 text-accent" />
                     <span className="text-[10px] font-black text-taupe uppercase tracking-widest">Real-time Responses</span>

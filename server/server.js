@@ -5,6 +5,14 @@ const { PrismaClient } = require('@prisma/client');
 const http = require('http');
 const { Server } = require('socket.io');
 
+// --- DEPLOYMENT READINESS CHECK ---
+const REQUIRED_ENV_VARS = ['DATABASE_URL', 'JWT_SECRET', 'CORS_ORIGIN'];
+const missingVars = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
+if (missingVars.length > 0) {
+  console.error('\x1b[31m%s\x1b[0m', `FATAL ERROR: Missing environment variables: ${missingVars.join(', ')}`);
+  process.exit(1);
+}
+
 // --- HELPERS ---
 function getDistance(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
@@ -23,7 +31,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.CORS_ORIGIN || "*",
     methods: ["GET", "POST"]
   }
 });
@@ -34,7 +42,9 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'homely_secret_key_2026';
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "*"
+}));
 app.use(express.json());
 
 // Middleware to authenticate JWT token
@@ -90,6 +100,79 @@ app.post('/api/auth/login', async (req, res) => {
     res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
   } catch (error) {
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// --- MATCHMAKING ROUTES ---
+
+app.get('/api/matchmaking/roommates', authenticateToken, async (req, res) => {
+  try {
+    const currentUser = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!currentUser) return res.status(404).json({ error: 'User not found' });
+
+    const others = await prisma.user.findMany({
+      where: {
+        id: { not: currentUser.id },
+        role: 'TENANT'
+      }
+    });
+
+    const matches = others.map(other => {
+      let score = 0;
+      
+      // Study Preference Match
+      if (currentUser.studyPreference === other.studyPreference && currentUser.studyPreference !== 'NEUTRAL') score += 30;
+      else if (currentUser.studyPreference === 'NEUTRAL' || other.studyPreference === 'NEUTRAL') score += 15;
+
+      // Cleanliness
+      const cleanDiff = Math.abs((currentUser.cleanlinessLevel || 3) - (other.cleanlinessLevel || 3));
+      score += (5 - cleanDiff) * 6;
+
+      // Social Preference
+      if (currentUser.socialPreference === other.socialPreference && currentUser.socialPreference !== 'NEUTRAL') score += 20;
+      else if (currentUser.socialPreference === 'NEUTRAL' || other.socialPreference === 'NEUTRAL') score += 10;
+
+      // Smoking
+      if (currentUser.isSmoking === other.isSmoking) score += 10;
+      
+      // Vegetarian
+      if (currentUser.isVegetarian === other.isVegetarian) score += 10;
+
+      const insights = [];
+      if (currentUser.studyPreference === other.studyPreference && currentUser.studyPreference !== 'NEUTRAL') 
+        insights.push("Similar study rhythm");
+      if (cleanDiff <= 1) 
+        insights.push("Syncs on cleanliness");
+      if (currentUser.socialPreference === other.socialPreference && currentUser.socialPreference !== 'NEUTRAL') 
+        insights.push("Matching social vibe");
+      if (currentUser.isVegetarian === other.isVegetarian) 
+        insights.push(currentUser.isVegetarian ? "Both vegetarians" : "Shared dietary lifestyle");
+
+      return {
+        id: other.id,
+        name: other.name,
+        email: other.email,
+        bio: other.bio || "Looking for a great roommate!",
+        college: other.college || "Student",
+        compatibility: Math.min(score, 100),
+        insights,
+        lifestyle: {
+          study: other.studyPreference,
+          cleanliness: other.cleanlinessLevel,
+          social: other.socialPreference,
+          smoking: other.isSmoking,
+          veg: other.isVegetarian
+        }
+      };
+    }).sort((a, b) => b.compatibility - a.compatibility);
+
+    res.json(matches);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Matchmaking failed' });
   }
 });
 
@@ -181,22 +264,33 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
     }
 
     res.json({
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, bio: user.bio, college: user.college, studyPreference: user.studyPreference, cleanlinessLevel: user.cleanlinessLevel, socialPreference: user.socialPreference, isSmoking: user.isSmoking, isVegetarian: user.isVegetarian },
       myBookings: [
         ...user.bookings.map(b => ({ ...b, type: 'ROOM' })),
         ...user.messBookings.map(s => ({ ...s, type: 'MESS', room: s.mess, roomId: s.messId })) 
       ],
       myListings: roomsWithReviews,
       myMesses: messesWithReviews,
-      inboundBookings: [
-        ...inboundBookings.map(b => ({ ...b, type: 'ROOM' })),
-        ...inboundSubscriptions.map(s => ({ ...s, type: 'MESS', room: s.mess, roomId: s.messId }))
-      ],
-      monthlyStats
+      monthlyStats,
+      inboundBookings,
+      inboundSubscriptions
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+app.put('/api/user/profile', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: req.body
+    });
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Update failed' });
   }
 });
 
@@ -207,11 +301,11 @@ app.get('/', (req, res) => {
 
 // Rooms Routes
 app.get('/api/rooms', async (req, res) => {
-  const { search, maxPrice, minRating, minReviews, amenities } = req.query;
+  const { search, maxPrice, minRating, minReviews, amenities, collegeLat, collegeLng, maxDistance } = req.query;
 
   try {
     let dbRooms = await prisma.room.findMany({ 
-        include: { images: true } 
+        include: { images: true, host: true } 
     });
 
     // 1. Initial Mapping and Deterministic Randomization
@@ -248,7 +342,9 @@ app.get('/api/rooms', async (req, res) => {
               messes: parsedMesses,
               image: r.images?.[0]?.url || null, 
               rating: parseFloat(rating.toFixed(1)), 
-              reviews: reviews
+              reviews: reviews,
+              isVerified: r.isVerified,
+              host: r.host
             };
         } catch (err) {
             console.error(`Critical error processing room at index ${index}:`, err);
@@ -309,7 +405,8 @@ app.get('/api/rooms/:id', async (req, res) => {
         include: { 
           images: true,
           reviews: { include: { user: true }, orderBy: { createdAt: 'desc' } },
-          nearbyMesses: true
+          nearbyMesses: true,
+          host: true
         } 
     });
     if (!dbRoom) return res.status(404).json({ error: 'Room not found' });
@@ -354,7 +451,9 @@ app.get('/api/rooms/:id', async (req, res) => {
         reviewCount: reviewCount || (10 + ((dbRoom.id * 83) % 400)), // Real or Mock
         reviews: dbRoom.reviews,
         stats: reviewCount > 0 ? stats : null,
-        hostId: dbRoom.hostId
+        hostId: dbRoom.hostId,
+        host: dbRoom.host,
+        isVerified: dbRoom.isVerified
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch room' });
@@ -365,11 +464,22 @@ app.get('/api/rooms/:id', async (req, res) => {
 app.post('/api/bookings', authenticateToken, async (req, res) => {
   const { roomId, price } = req.body;
   try {
+    // Enforce one active booking at a time per tenant
+    const existing = await prisma.booking.findFirst({
+      where: {
+        tenantId: req.user.id,
+        status: { in: ['CONFIRMED', 'PENDING'] }
+      }
+    });
+    if (existing) {
+      return res.status(400).json({ error: 'You already have an active booking. Cancel it before booking a new one.' });
+    }
+
     const booking = await prisma.booking.create({
       data: {
         startDate: new Date(),
         endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)),
-        totalPrice: (price * 3) + 800, // Matching frontend calculation
+        totalPrice: (price * 3) + 800,
         status: "CONFIRMED",
         roomId: parseInt(roomId),
         tenantId: req.user.id
@@ -383,7 +493,7 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
 
 // Create Room Route
 app.post('/api/rooms', authenticateToken, async (req, res) => {
-  const { title, description, price, location, amenities, messes, lat, lng } = req.body;
+  const { title, description, price, location, amenities, messes, images, lat, lng } = req.body;
   try {
     if (req.user.role !== 'HOST') return res.status(403).json({ error: 'Only hosts can create rooms' });
 
@@ -411,12 +521,24 @@ app.post('/api/rooms', authenticateToken, async (req, res) => {
       }
     });
     
-    await prisma.image.create({
-      data: {
-        url: '', // Empty URL triggers local fallback
-        roomId: dbRoom.id
+    if (images && Array.isArray(images) && images.length > 0) {
+      for (const img of images) {
+        await prisma.image.create({
+          data: {
+            url: img.url,
+            isPanorama: !!img.isPanorama,
+            roomId: dbRoom.id
+          }
+        });
       }
-    });
+    } else {
+      await prisma.image.create({
+        data: {
+          url: '', // Empty URL triggers local fallback
+          roomId: dbRoom.id
+        }
+      });
+    }
 
     res.json({ success: true, room: dbRoom });
   } catch (error) {
@@ -429,7 +551,7 @@ app.post('/api/rooms', authenticateToken, async (req, res) => {
 
 // Get all messes with optional search
 app.get('/api/messes', async (req, res) => {
-  const { search, type, collegeLat, collegeLng, maxDistance } = req.query;
+  const { search, type, collegeLat, collegeLng, maxDistance, maxPrice, minRating, minReviews } = req.query;
   try {
     const where = {};
     if (search) {
@@ -452,7 +574,7 @@ app.get('/api/messes', async (req, res) => {
       }
     });
 
-    const mappedMesses = messes.map(m => {
+    let mappedMesses = messes.map(m => {
       const reviewCount = m.reviews.length;
       const rating = reviewCount > 0 
         ? m.reviews.reduce((acc, r) => acc + r.overallRating, 0) / reviewCount
@@ -462,9 +584,22 @@ app.get('/api/messes', async (req, res) => {
         ...m,
         image: m.images?.[0]?.url || null,
         rating: parseFloat(rating.toFixed(1)),
-        reviewCount: reviewCount || (5 + (m.id * 7) % 50)
+        reviewCount: reviewCount || (5 + (m.id * 7) % 50),
+        isVerified: m.isVerified
       };
     });
+
+    if (maxPrice) {
+      mappedMesses = mappedMesses.filter(m => m.price <= parseInt(maxPrice));
+    }
+    
+    if (minRating) {
+      mappedMesses = mappedMesses.filter(m => m.rating >= parseFloat(minRating));
+    }
+    
+    if (minReviews) {
+      mappedMesses = mappedMesses.filter(m => m.reviewCount >= parseInt(minReviews));
+    }
 
     if (collegeLat && collegeLng && maxDistance) {
       const cLat = parseFloat(collegeLat);
@@ -530,7 +665,7 @@ app.get('/api/messes/:id', async (req, res) => {
 
 // Create standalone mess
 app.post('/api/messes', authenticateToken, async (req, res) => {
-  const { name, description, price, location, type, lat, lng, image } = req.body;
+  const { name, description, price, location, type, lat, lng, images } = req.body;
   try {
     if (req.user.role !== 'HOST') return res.status(403).json({ error: 'Only hosts can list messes' });
 
@@ -547,10 +682,21 @@ app.post('/api/messes', authenticateToken, async (req, res) => {
       }
     });
 
-    // Create shadow image placeholder for local fallback
-    await prisma.messImage.create({
-      data: { url: '', messId: mess.id }
-    });
+    if (images && Array.isArray(images) && images.length > 0) {
+      for (const img of images) {
+        await prisma.messImage.create({
+          data: {
+            url: img.url,
+            isPanorama: !!img.isPanorama,
+            messId: mess.id
+          }
+        });
+      }
+    } else {
+      await prisma.messImage.create({
+        data: { url: '', messId: mess.id }
+      });
+    }
 
     res.json({ success: true, mess });
   } catch (error) {
@@ -817,6 +963,172 @@ app.post('/api/wishlist/toggle', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to toggle wishlist' });
+  }
+});
+
+// --- MAINTENANCE SYSTEM ---
+app.post('/api/maintenance', authenticateToken, async (req, res) => {
+  const { title, description, priority, roomId, imageUrl } = req.body;
+  try {
+    const ticket = await prisma.maintenanceRequest.create({
+      data: {
+        title,
+        description,
+        priority: priority || 'MEDIUM',
+        roomId: roomId ? parseInt(roomId) : null,
+        imageUrl: imageUrl || null,
+        userId: req.user.id
+      }
+    });
+    res.json({ success: true, ticket });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create maintenance ticket' });
+  }
+});
+
+app.get('/api/maintenance', authenticateToken, async (req, res) => {
+  try {
+    let tickets;
+    if (req.user.role === 'HOST') {
+      // Host sees tickets for their properties
+      tickets = await prisma.maintenanceRequest.findMany({
+        where: { room: { hostId: req.user.id } },
+        include: { room: true, user: { select: { name: true, email: true } } },
+        orderBy: { createdAt: 'desc' }
+      });
+    } else {
+      // Tenant sees their own tickets
+      tickets = await prisma.maintenanceRequest.findMany({
+        where: { userId: req.user.id },
+        include: { room: true },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
+    res.json(tickets);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch maintenance tickets' });
+  }
+});
+
+app.put('/api/maintenance/:id', authenticateToken, async (req, res) => {
+  const { status, hostResponse } = req.body;
+  try {
+    if (req.user.role !== 'HOST') return res.status(403).json({ error: 'Only hosts can update tickets' });
+
+    const ticket = await prisma.maintenanceRequest.update({
+      where: { id: parseInt(req.params.id) },
+      data: { 
+        status: status || undefined, 
+        hostResponse: hostResponse !== undefined ? hostResponse : undefined 
+      }
+    });
+    res.json({ success: true, ticket });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update maintenance ticket' });
+  }
+});
+
+// --- FINANCIAL & RENT SPLITTING ---
+
+// Create an expense and split it
+app.post('/api/expenses', authenticateToken, async (req, res) => {
+  const { title, description, amount, category, splitWith } = req.body; // splitWith is an array of { userId, amount }
+  try {
+    const expense = await prisma.expense.create({
+      data: {
+        title,
+        description,
+        amount: parseFloat(amount),
+        category,
+        payerId: req.user.id,
+        splits: {
+          create: (splitWith || []).map(s => ({
+            userId: s.userId,
+            amount: parseFloat(s.amount),
+            status: 'UNPAID'
+          }))
+        }
+      },
+      include: { splits: true }
+    });
+    res.json({ success: true, expense });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create expense' });
+  }
+});
+
+// Get user's financial dashboard
+app.get('/api/financial-summary', authenticateToken, async (req, res) => {
+  try {
+    // 1. Money I owe
+    const moneyIOwe = await prisma.expenseSplit.findMany({
+      where: { userId: req.user.id, status: 'UNPAID' },
+      include: { expense: { include: { payer: true } } }
+    });
+
+    // 2. Money owed to me
+    const moneyOwedToMe = await prisma.expense.findMany({
+      where: { payerId: req.user.id },
+      include: { splits: { where: { status: 'UNPAID' }, include: { user: true } } }
+    });
+
+    // 3. Recent Payments
+    const recentPayments = await prisma.payment.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    });
+
+    res.json({
+      moneyIOwe,
+      moneyOwedToMe,
+      recentPayments
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch financial summary' });
+  }
+});
+
+// Settle a split
+app.patch('/api/splits/:id/settle', authenticateToken, async (req, res) => {
+  const { provider, reference } = req.body;
+  try {
+    const split = await prisma.expenseSplit.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: { expense: true }
+    });
+
+    if (!split || split.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized to settle this split' });
+    }
+
+    // Update split status
+    await prisma.expenseSplit.update({
+      where: { id: split.id },
+      data: { status: 'PAID' }
+    });
+
+    // Create a payment record
+    const payment = await prisma.payment.create({
+      data: {
+        amount: split.amount,
+        status: 'COMPLETED',
+        type: 'UTILITY',
+        provider,
+        reference,
+        userId: req.user.id
+      }
+    });
+
+    res.json({ success: true, payment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to settle split' });
   }
 });
 

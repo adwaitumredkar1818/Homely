@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -19,6 +19,16 @@ model User {
   idProofUrl      String?
   studentIdUrl    String?
 
+  // Lifestyle Preferences (For Matchmaking)
+  bio               String?   @default("No bio provided.")
+  college           String?
+  studyPreference   String?   @default("NEUTRAL") // MORNING, NIGHT, NEUTRAL
+  cleanlinessLevel  Int?      @default(3)         // 1-5
+  socialPreference  String?   @default("NEUTRAL") // INTROVERT, EXTROVERT, NEUTRAL
+  isSmoking         Boolean?  @default(false)
+  isVegetarian      Boolean?  @default(false)
+  hobbies           String?   @default("[]")      // JSON string of tags
+
   // Relations
   rooms     Room[]    @relation("UserRooms")
   bookings  Booking[] @relation("UserBookings")
@@ -30,6 +40,11 @@ model User {
   messReviews   MessReview[]
   wishlist      Wishlist[]
   maintenanceRequests MaintenanceRequest[]
+  
+  // Financial Relations
+  payments    Payment[]
+  paidExpenses Expense[] @relation("PayerExpenses")
+  expenseShares ExpenseSplit[]
 }
 
 model Room {
@@ -58,9 +73,10 @@ model Room {
 
 model Image {
   id      Int    @id @default(autoincrement())
-  url     String
-  roomId  Int
-  room    Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  url         String
+  isPanorama  Boolean  @default(false)
+  roomId      Int
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
@@ -133,9 +149,10 @@ model Mess {
 
 model MessImage {
   id     Int    @id @default(autoincrement())
-  url    String
-  messId Int
-  mess   Mess   @relation(fields: [messId], references: [id], onDelete: Cascade)
+  url         String
+  isPanorama  Boolean  @default(false)
+  messId      Int
+  mess        Mess     @relation(fields: [messId], references: [id], onDelete: Cascade)
 }
 
 model MessSubscription {
@@ -177,6 +194,8 @@ model MaintenanceRequest {
   description String
   status      String   @default("PENDING") // PENDING, IN_PROGRESS, RESOLVED
   priority    String   @default("MEDIUM")  // LOW, MEDIUM, HIGH
+  imageUrl    String?
+  hostResponse String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -195,3 +214,51 @@ model Wishlist {
   messId  Int?
   mess    Mess? @relation(fields: [messId], references: [id])
 }
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  amount    Float
+  status    String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  type      String   // RENT, MESS, UTILITY, OTHER
+  provider  String?  // UPI, CARD, CASH
+  reference String?  // Transaction ID
+  createdAt DateTime @default(now())
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Optional links
+  bookingId Int?
+  subscriptionId Int?
+}
+
+model Expense {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  amount      Float
+  category    String   @default("GENERAL") // FOOD, UTILITIES, RENT, OTHER
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // The user who paid the bill initially
+  payerId     Int
+  payer       User     @relation("PayerExpenses", fields: [payerId], references: [id])
+
+  // Relations
+  splits      ExpenseSplit[]
+}
+
+model ExpenseSplit {
+  id        Int      @id @default(autoincrement())
+  amount    Float    // The share of this user
+  status    String   @default("UNPAID") // UNPAID, PAID
+  
+  expenseId Int
+  expense   Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+

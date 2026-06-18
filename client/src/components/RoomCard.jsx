@@ -17,7 +17,7 @@ export default function RoomCard({ room }) {
           alt={room.title}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-md rounded-full text-primary-light hover:text-accent hover:bg-white hover:shadow-lg transition-all duration-300">
+        <button className="absolute top-3 right-3 p-2 bg-surface/80 backdrop-blur-md rounded-full text-taupe hover:text-accent hover:bg-surface hover:shadow-lg transition-all duration-300">
           <Heart className="w-5 h-5" />
         </button>
       </div>
@@ -48,7 +48,7 @@ export default function RoomCard({ room }) {
         </div>
         
         <div className="flex items-end justify-between">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-taupe">
             <span className="text-xl font-bold text-primary mr-1">₹{room.price.toLocaleString('en-IN')}</span>
             / month
           </div>

@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --primary: #3e3633;
   --primary-light: #51575b;
@@ -15,12 +17,32 @@
 .dark {
   --primary: #f4f0e8;
   --primary-light: #d1d5db;
-  --accent: #ae9884;
-  --background: #373c43;
-  --surface: #434a52;
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  --border: rgba(255, 255, 255, 0.1);
+  --accent: #d2a07c;
+  --background: #1a1614;
+  --surface: #2d2622;
+  --text-main: #f4f0e8;
+  --text-muted: #ae9884;
+  --border: rgba(210, 160, 124, 0.1);
+}
+
+@layer utilities {
+  .clay-card {
+    background: var(--surface);
+    border-radius: 2.5rem;
+    box-shadow: 
+      12px 12px 24px rgba(0, 0, 0, 0.05),
+      inset 8px 8px 16px rgba(255, 255, 255, 0.05),
+      inset -8px -8px 16px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .dark .clay-card {
+    box-shadow: 
+      12px 12px 24px rgba(0, 0, 0, 0.2),
+      inset 4px 4px 8px rgba(255, 255, 255, 0.03),
+      inset -4px -4px 8px rgba(0, 0, 0, 0.3);
+  }
 }
 
 @theme {
@@ -61,3 +83,22 @@ body {
     opacity: 1;
   }
 }
+
+.animate-spin-slow {
+  animation: spin 8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-slow {
+  animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulseSlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.98); }
+}
+

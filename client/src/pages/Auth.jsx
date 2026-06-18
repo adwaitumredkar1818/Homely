@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { User, ShieldCheck, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import API_URL from '../utils/api';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -19,12 +20,12 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // // Redirect if already logged in based on role
-  // useEffect(() => {
-  //   if (user) {
-  //     navigate(user.role === 'HOST' ? '/host' : '/home');
-  //   }
-  // }, [user, navigate]);
+  // Redirect if already logged in based on role
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'HOST' ? '/host' : '/home');
+    }
+  }, [user, navigate]);
 
   const from = location.state?.from || '/home';
 
@@ -39,7 +40,7 @@ export default function Auth() {
       : { ...formData, role };
 
     try {
-      const res = await fetch(`http://localhost:5000${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -64,7 +65,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-80px)] w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
@@ -74,26 +75,26 @@ export default function Auth() {
         {/* Left Side: Branding/Visual */}
         <div className="hidden lg:flex flex-col justify-between p-12 bg-primary dark:bg-zinc-900 relative">
           <div className="z-10">
-            <Link to="/home" className="inline-flex items-center gap-2 text-background font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary rotate-3">H</div>
+            <Link to="/home" className="inline-flex items-center gap-2 text-[#f4f0e8] font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-[#f4f0e8] rotate-3">H</div>
               Homely
             </Link>
-            <h1 className="text-5xl font-bold text-background leading-[1.1] mb-6">
+            <h1 className="text-5xl font-bold text-[#f4f0e8] leading-[1.1] mb-6">
               Find your perfect <br /> <span className="text-accent underline decoration-4 underline-offset-8">student home</span>
             </h1>
-            <p className="text-background/70 text-lg max-w-md leading-relaxed">
+            <p className="text-[#f4f0e8]/70 text-lg max-w-md leading-relaxed">
               Join thousands of students and hosts in India's most trusted marketplace for hostels and dining services.
             </p>
           </div>
 
           <div className="z-10 grid grid-cols-2 gap-6">
             <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
-              <p className="text-3xl font-bold text-background mb-1">10k+</p>
-              <p className="text-sm text-background/50 font-medium">Verified Listings</p>
+              <p className="text-3xl font-bold text-[#f4f0e8] mb-1">10k+</p>
+              <p className="text-sm text-[#f4f0e8]/50 font-medium">Verified Listings</p>
             </div>
             <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
-              <p className="text-3xl font-bold text-background mb-1">24/7</p>
-              <p className="text-sm text-background/50 font-medium">Host Support</p>
+              <p className="text-3xl font-bold text-[#f4f0e8] mb-1">24/7</p>
+              <p className="text-sm text-[#f4f0e8]/50 font-medium">Host Support</p>
             </div>
           </div>
 
@@ -199,7 +200,7 @@ export default function Auth() {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full bg-primary hover:bg-black text-background font-bold py-5 rounded-2xl transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                className="w-full bg-primary hover:opacity-90 text-background font-bold py-5 rounded-2xl transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
               >
                 {isLoading ? (
                   <>

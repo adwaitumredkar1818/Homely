@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import RoomCard from '../components/RoomCard';
 import MessCard from '../components/MessCard'; // Added
 import FilterModal from '../components/FilterModal';
-import { SlidersHorizontal, Home as House, Utensils } from 'lucide-react'; 
+import Map from '../components/Map';
+import { SlidersHorizontal, Home as House, Utensils, MapPin, Sparkles } from 'lucide-react'; 
+import API_URL from '../utils/api';
 
 export default function Home() {
   const [rooms, setRooms] = useState([]);
@@ -28,7 +30,7 @@ export default function Home() {
     const qParams = new URLSearchParams(searchParams).toString();
     const endpoint = activeMode === 'rooms' ? 'rooms' : 'messes';
 
-    fetch(`http://localhost:5000/api/${endpoint}?${qParams}`)
+    fetch(`${API_URL}/api/${endpoint}?${qParams}`)
       .then(res => res.json())
       .then(data => {
         if (activeMode === 'rooms') setRooms(data);
@@ -75,11 +77,27 @@ export default function Home() {
     <div className="flex-1 max-w-[1400px] w-full mx-auto p-4 sm:p-6 lg:p-8">
       
       <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
+        <div className="flex-1">
           <h1 className="text-4xl lg:text-5xl font-bold mb-4 text-primary tracking-tight">
             {activeMode === 'rooms' ? 'Over 1,000 rooms available' : 'Discover the Best Nearby Dining'}
           </h1>
           
+          {user?.role !== 'HOST' && (
+            <div className="mb-12 mt-8 bg-surface p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden group hover:border-accent/20 transition-all duration-700 shadow-xl">
+               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-1000">
+                  <Sparkles className="w-32 h-32 text-accent" />
+               </div>
+               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                  <div className="text-center md:text-left">
+                     <h3 className="text-2xl font-black text-primary tracking-tighter mb-1">Roommates make life <span className="text-accent italic">better</span>.</h3>
+                     <p className="text-sm text-taupe font-medium max-w-lg">Our AI Matchmaker finds students with your exact vibe and study habits.</p>
+                  </div>
+                  <Link to="/roommates" className="px-8 py-4 bg-primary text-background rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:bg-accent transition-all shadow-xl shadow-primary/10 whitespace-nowrap">
+                     Try Matchmaker
+                  </Link>
+               </div>
+            </div>
+          )}
           {/* Discovery Toggle with sliding pill */}
           <div className="relative flex bg-surface p-1.5 rounded-2xl border border-white/10 w-fit mb-6 overflow-hidden shadow-inner">
             {/* Sliding Pill Background */}
@@ -113,7 +131,7 @@ export default function Home() {
         <div className="flex gap-4 w-full md:w-auto">
           <button 
             onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-primary text-background rounded-xl font-bold shadow-lg hover:bg-black transition-all"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-primary text-background rounded-xl font-bold shadow-lg hover:opacity-90 transition-all"
           >
             {viewMode === 'list' ? (
               <><MapPin className="w-5 h-5" /> Show Map</>
@@ -137,6 +155,7 @@ export default function Home() {
         onClose={() => setIsFilterModalOpen(false)} 
         initialFilters={currentFilters}
         onApply={handleApplyFilters}
+        activeMode={activeMode}
       />
       
       {viewMode === 'list' ? (
