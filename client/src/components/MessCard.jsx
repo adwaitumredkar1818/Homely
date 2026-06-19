@@ -70,7 +70,7 @@ export default function MessCard({ mess }) {
              </div>
              <span className="text-[10px] font-black uppercase tracking-widest text-taupe">Daily Meals</span>
            </div>
-           <div className="px-6 py-3 bg-primary text-background rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:opacity-90 shadow-lg">
+           <div className="px-6 py-3 bg-primary text-background rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-black shadow-lg">
               View Menu
            </div>
         </div>

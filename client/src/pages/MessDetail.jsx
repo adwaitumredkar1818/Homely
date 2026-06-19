@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, Heart, Share, ChevronLeft, Utensils, MapPin, Clock, Shield, Calendar, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
 import Map from '../components/Map';
 import { useAuth } from '../context/AuthContext';
-import API_URL from '../utils/api';
 
 export default function MessDetail() {
   const { id } = useParams();
@@ -16,7 +15,7 @@ export default function MessDetail() {
   const { user, token } = useAuth();
 
   useEffect(() => {
-    fetch(`${API_URL}/api/messes/${id}`)
+    fetch(`http://localhost:5000/api/messes/${id}`)
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
@@ -32,7 +31,7 @@ export default function MessDetail() {
 
     // Check wishlist status
     if (user && token) {
-      fetch(`${API_URL}/api/wishlist`, {
+      fetch('http://localhost:5000/api/wishlist', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -53,7 +52,7 @@ export default function MessDetail() {
 
     setIsSubscribing(true);
     try {
-      const res = await fetch(`${API_URL}/api/messes/${id}/subscribe`, {
+      const res = await fetch(`http://localhost:5000/api/messes/${id}/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +80,7 @@ export default function MessDetail() {
     }
 
     try {
-      const res = await fetch(`${API_URL}/api/wishlist/toggle`, {
+      const res = await fetch('http://localhost:5000/api/wishlist/toggle', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

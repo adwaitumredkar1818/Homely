@@ -12,8 +12,6 @@ import Inbox from './pages/Inbox';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import Maintenance from './pages/host/Maintenance';
-import Roommates from './pages/Roommates';
-import Finance from './pages/Finance';
 
 function PublicLayout() {
   return (
@@ -32,16 +30,15 @@ function App() {
       <Routes>
         {/* Auth Route */}
         <Route path="/" element={<Auth />} />
+        <Route path="/auth" element={<Auth />} />
 
         {/* Public Routes - Includes Navbar */}
         <Route element={<PublicLayout />}>
           <Route path="/home" element={<Home />} />
           <Route path="/room/:id" element={<RoomDetail />} />
           <Route path="/mess/:id" element={<MessDetail />} />
-          <Route path="/roommates" element={<Roommates />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/inbox" element={<Inbox />} />
-          <Route path="/finance" element={<Finance />} />
         </Route>
 
         {/* Host Routes - Sidebar Admin Layout */}
@@ -53,10 +50,6 @@ function App() {
           <Route path="inbox" element={<Inbox />} />
           <Route path="maintenance" element={<Maintenance />} />
         </Route>
-
-        {/* Fallback — any unmatched route goes to login */}
-        <Route path="/auth" element={<Auth />} />
-        <Route path="*" element={<Auth />} />
       </Routes>
     </BrowserRouter>
   );

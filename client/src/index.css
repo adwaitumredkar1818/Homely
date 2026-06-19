@@ -1,60 +1,43 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@variant dark (&:where(.dark, .dark *));
-
 :root {
   --primary: #3e3633;
   --primary-light: #51575b;
   --accent: #694230;
+  --accent-hover: #543426;
   --background: #f4f0e8;
   --surface: #ffffff;
   --text-main: #3e3633;
   --text-muted: #8f8074;
   --border: rgba(143, 128, 116, 0.3);
+  --taupe-light: #ae9884;
 }
 
 .dark {
-  --primary: #f4f0e8;
+  --primary: #f3f4f6;
   --primary-light: #d1d5db;
-  --accent: #d2a07c;
-  --background: #1a1614;
-  --surface: #2d2622;
-  --text-main: #f4f0e8;
-  --text-muted: #ae9884;
-  --border: rgba(210, 160, 124, 0.1);
-}
-
-@layer utilities {
-  .clay-card {
-    background: var(--surface);
-    border-radius: 2.5rem;
-    box-shadow: 
-      12px 12px 24px rgba(0, 0, 0, 0.05),
-      inset 8px 8px 16px rgba(255, 255, 255, 0.05),
-      inset -8px -8px 16px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 0.3s ease;
-  }
-
-  .dark .clay-card {
-    box-shadow: 
-      12px 12px 24px rgba(0, 0, 0, 0.2),
-      inset 4px 4px 8px rgba(255, 255, 255, 0.03),
-      inset -4px -4px 8px rgba(0, 0, 0, 0.3);
-  }
+  --accent: #a5b4fc;
+  --accent-hover: #c7d2fe;
+  --background: #0b0f19;
+  --surface: #161b2c;
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --border: rgba(165, 180, 252, 0.15);
+  --taupe-light: #4338ca;
 }
 
 @theme {
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
   --color-accent: var(--accent);
-  --color-accent-hover: #000000;
+  --color-accent-hover: var(--accent-hover);
   --color-background: var(--background);
   --color-surface: var(--surface);
   
   --color-taupe: var(--text-muted);
-  --color-taupe-light: #ae9884;
+  --color-taupe-light: var(--taupe-light);
+  --color-border: var(--border);
   --color-black: #000000;
 
   --font-sans: 'Inter', sans-serif;
@@ -62,6 +45,25 @@
 
 body {
   @apply bg-background text-primary transition-colors duration-300;
+}
+
+/* Premium Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 /* Cinematic Bloom Discovery Transition */
@@ -83,22 +85,3 @@ body {
     opacity: 1;
   }
 }
-
-.animate-spin-slow {
-  animation: spin 8s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-pulse-slow {
-  animation: pulseSlow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulseSlow {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(0.98); }
-}
-

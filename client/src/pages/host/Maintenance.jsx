@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Loader2, AlertCircle, CheckCircle2, Clock, Wrench, XCircle } from 'lucide-react';
-import API_URL from '../../utils/api';
+import { Loader2, AlertCircle, CheckCircle2, Clock, Wrench } from 'lucide-react';
 
 export default function Maintenance() {
   const { token } = useAuth();
-  const location = useLocation();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -18,35 +15,25 @@ export default function Maintenance() {
     fetchTickets();
   }, [token]);
 
-  const fetchTickets = async () => {
+  async function fetchTickets() {
     try {
-      const res = await fetch(`${API_URL}/api/maintenance`, {
+      const res = await fetch('http://localhost:5000/api/maintenance', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
       setTickets(data);
-      
-      // Auto-select ticket if highlighted from state
-      if (location.state?.highlightId) {
-        const ticketToHighlight = data.find(t => t.id === location.state.highlightId);
-        if (ticketToHighlight) {
-          setSelectedTicket(ticketToHighlight);
-          setStatus(ticketToHighlight.status);
-          setResponse(ticketToHighlight.hostResponse || '');
-        }
-      }
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     setUpdating(true);
     try {
-      const res = await fetch(`${API_URL}/api/maintenance/${selectedTicket.id}`, {
+      const res = await fetch(`http://localhost:5000/api/maintenance/${selectedTicket.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -82,76 +69,55 @@ export default function Maintenance() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 p-4 sm:p-6 lg:p-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-black text-primary tracking-tight mb-2">Service Desk</h1>
-          <p className="text-taupe font-bold flex items-center gap-2">
-             <Wrench className="w-4 h-4 text-accent" />
-             Resolving infrastructure issues and maintaining quality of life.
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-surface rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden group">
-        <div className="p-8 border-b border-white/5 flex justify-between items-center bg-primary/5">
-          <h3 className="text-2xl font-black text-primary flex items-center gap-3">
-            <AlertCircle className="w-6 h-6 text-accent" /> Active Tickets
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 p-4 sm:p-6 lg:p-8">
+      <div className="bg-surface rounded-[2.5rem] border border-border shadow-2xl overflow-hidden">
+        <div className="p-8 border-b border-border flex justify-between items-center bg-background/30">
+          <h3 className="text-xl font-black text-primary flex items-center gap-2">
+            <Wrench className="w-6 h-6 text-accent" />
+            Maintenance Tickets
           </h3>
-          <div className="flex items-center gap-3">
-             <span className="text-[10px] font-black uppercase tracking-widest text-taupe px-3 py-1 bg-background rounded-full border border-white/5">
-                {tickets.length} Total
-             </span>
-          </div>
         </div>
 
-        <div className="p-10">
+        <div className="p-8">
           {tickets.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {tickets.map((ticket, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {tickets.map((ticket) => (
                 <div 
                   key={ticket.id} 
                   onClick={() => openTicket(ticket)}
-                  className="bg-surface rounded-3xl border border-white/10 p-8 shadow-sm hover:shadow-2xl cursor-pointer transition-all hover:border-accent/20 group/card relative overflow-hidden flex flex-col"
-                  style={{ transitionDelay: `${idx * 50}ms` }}
+                  className="bg-surface rounded-2xl border border-border p-6 shadow-sm hover:shadow-md cursor-pointer transition-all hover:border-primary/20"
                 >
-                  <div className="flex justify-between items-start mb-6">
-                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                  <div className="flex justify-between items-start mb-4">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
                       ticket.priority === 'HIGH' ? 'bg-red-500/10 text-red-500' : 
-                      ticket.priority === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'
+                      ticket.priority === 'MEDIUM' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
                     }`}>
-                      {ticket.priority} Priority
+                      {ticket.priority} PRIORITY
                     </span>
-                    <div className={`p-2 rounded-lg ${
-                      ticket.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-500' : 
-                      ticket.status === 'IN_PROGRESS' ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'
+                    <span className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-widest ${
+                      ticket.status === 'RESOLVED' ? 'text-green-500' : 
+                      ticket.status === 'IN_PROGRESS' ? 'text-amber-500' : 'text-red-500'
                     }`}>
-                      {ticket.status === 'RESOLVED' ? <CheckCircle2 className="w-4 h-4" /> : 
-                       ticket.status === 'IN_PROGRESS' ? <Clock className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                    </div>
+                      {ticket.status === 'RESOLVED' ? <CheckCircle2 className="w-3 h-3" /> : 
+                       ticket.status === 'IN_PROGRESS' ? <Clock className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                      {ticket.status}
+                    </span>
                   </div>
-
-                  <h4 className="text-xl font-black text-primary mb-3 group-hover/card:text-accent transition-colors line-clamp-1">{ticket.title}</h4>
-                  <p className="text-sm text-taupe font-medium line-clamp-3 mb-8 opacity-70">{ticket.description}</p>
+                  <h4 className="font-bold text-primary mb-2 line-clamp-1">{ticket.title}</h4>
+                  <p className="text-sm text-taupe line-clamp-2 mb-4">{ticket.description}</p>
                   
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-taupe/60 border-t border-white/5 pt-6 mt-auto">
-                     <span className="truncate max-w-[120px]">{ticket.room?.title || 'Unknown Property'}</span>
-                     <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 opacity-50" /> {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-center text-xs text-taupe font-medium border-t border-border pt-4 mt-auto">
+                     <span>{ticket.room?.title || 'Unknown Property'}</span>
+                     <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
                   </div>
-
-                  <div className="absolute bottom-0 left-0 h-1 bg-accent w-0 group-hover/card:w-full transition-all duration-700" />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-20">
-                <div className="w-24 h-24 bg-primary/5 rounded-full flex items-center justify-center mx-auto mb-8">
-                   <Wrench className="w-10 h-10 text-taupe/20" />
-                </div>
-                <h3 className="text-3xl font-black text-primary mb-3">Clear Skies</h3>
-                <p className="text-taupe font-bold">No active maintenance requests found.</p>
+            <div className="text-center py-16">
+                <Wrench className="w-16 h-16 text-taupe/40 mx-auto mb-6" />
+                <div className="text-taupe font-bold text-lg">No maintenance requests.</div>
+                <p className="text-taupe/60 text-sm mt-1">Everything is running smoothly!</p>
             </div>
           )}
         </div>
@@ -159,95 +125,56 @@ export default function Maintenance() {
 
       {/* Ticket Modal */}
       {selectedTicket && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
-           <div className="bg-surface rounded-[3rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 border border-white/10">
-              <div className="p-8 border-b border-white/5 flex justify-between items-center bg-primary/5">
-                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-accent mb-1">Ticket Reference</p>
-                    <h2 className="text-2xl font-black text-primary">#ST-{selectedTicket.id.substring(0, 8)}</h2>
-                 </div>
-                 <button onClick={() => setSelectedTicket(null)} className="w-12 h-12 flex items-center justify-center bg-background rounded-2xl text-taupe hover:text-primary transition-colors border border-white/5">
-                    <XCircle className="w-6 h-6" />
-                 </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+           <div className="bg-surface rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95">
+              <div className="p-6 border-b border-border flex justify-between items-center">
+                 <h2 className="text-xl font-black text-primary">Ticket #{selectedTicket.id}</h2>
+                 <button onClick={() => setSelectedTicket(null)} className="text-taupe hover:text-primary p-2">✕</button>
               </div>
-              
-              <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+              <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
                  <div>
-                    <h3 className="text-2xl font-black text-primary mb-3">{selectedTicket.title}</h3>
-                    <p className="text-base text-taupe leading-relaxed font-medium">{selectedTicket.description}</p>
+                    <h3 className="font-bold text-primary text-lg mb-1">{selectedTicket.title}</h3>
+                    <p className="text-sm text-taupe mb-4">{selectedTicket.description}</p>
+                    {selectedTicket.imageUrl && (
+                      <img src={selectedTicket.imageUrl} alt="Issue" className="w-full h-48 object-cover rounded-xl mb-4" />
+                    )}
                  </div>
 
-                 {selectedTicket.imageUrl && (
-                    <div className="rounded-[2rem] overflow-hidden border border-white/10 shadow-lg">
-                       <img src={selectedTicket.imageUrl} alt="Issue" className="w-full h-auto" />
-                    </div>
-                 )}
-
-                 <div className="p-6 bg-primary/5 rounded-3xl border border-white/5 flex flex-wrap items-center justify-between gap-6">
-                    <div className="space-y-1">
-                       <p className="text-[10px] font-black text-taupe uppercase tracking-widest opacity-60">Reported By</p>
-                       <p className="font-black text-primary">{selectedTicket.tenant?.name || 'Anonymous'}</p>
-                    </div>
-                    <div className="space-y-1">
-                       <p className="text-[10px] font-black text-taupe uppercase tracking-widest opacity-60">Property</p>
-                       <p className="font-black text-primary truncate max-w-[200px]">{selectedTicket.room?.title || 'Main Complex'}</p>
-                    </div>
-                    <div className="space-y-1">
-                       <p className="text-[10px] font-black text-taupe uppercase tracking-widest opacity-60">Report Date</p>
-                       <p className="font-black text-primary">{new Date(selectedTicket.createdAt).toLocaleDateString()}</p>
-                    </div>
+                 <div className="bg-background/50 p-4 rounded-xl text-sm border border-border space-y-2">
+                    <p><span className="font-bold text-primary">Property:</span> {selectedTicket.room?.title}</p>
+                    <p><span className="font-bold text-primary">Tenant:</span> {selectedTicket.user?.name} ({selectedTicket.user?.email})</p>
+                    <p><span className="font-bold text-primary">Reported:</span> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
                  </div>
 
-                 <form onSubmit={handleUpdate} className="space-y-6 pt-4 border-t border-white/5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <label className="text-xs font-black text-taupe uppercase tracking-widest ml-1">Status Update</label>
-                          <select 
-                            value={status} 
-                            onChange={(e) => setStatus(e.target.value)}
-                            className="w-full p-4 bg-background border border-white/10 rounded-2xl font-bold focus:ring-4 focus:ring-accent/5 outline-none text-primary"
-                          >
-                            <option value="PENDING">Pending Approval</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="RESOLVED">Resolved</option>
-                          </select>
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-xs font-black text-taupe uppercase tracking-widest ml-1">Priority Confirmation</label>
-                          <div className={`p-4 bg-background border border-white/10 rounded-2xl font-black text-sm uppercase tracking-widest flex items-center gap-2 ${
-                             selectedTicket.priority === 'HIGH' ? 'text-red-500' : 'text-primary'
-                          }`}>
-                             <AlertCircle className="w-4 h-4" /> {selectedTicket.priority}
-                          </div>
-                       </div>
+                 <form onSubmit={handleUpdate} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-primary mb-2">Update Status</label>
+                      <select 
+                        value={status} 
+                        onChange={(e) => setStatus(e.target.value)}
+                        className="w-full p-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-accent focus:border-accent text-primary font-medium"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="IN_PROGRESS">IN_PROGRESS</option>
+                        <option value="RESOLVED">RESOLVED</option>
+                      </select>
                     </div>
-
-                    <div className="space-y-2">
-                       <label className="text-xs font-black text-taupe uppercase tracking-widest ml-1">Internal Notes / Response</label>
-                       <textarea 
-                         className="w-full p-6 bg-background border border-white/10 rounded-3xl min-h-[120px] font-medium focus:ring-4 focus:ring-accent/5 outline-none text-primary placeholder:opacity-50"
-                         placeholder="Detail the actions taken or provide a response to the tenant..."
-                         value={response}
-                         onChange={(e) => setResponse(e.target.value)}
-                       />
+                    <div>
+                      <label className="block text-sm font-bold text-primary mb-2">Your Response (Optional)</label>
+                      <textarea
+                        value={response}
+                        onChange={(e) => setResponse(e.target.value)}
+                        placeholder="Let the tenant know what's happening..."
+                        className="w-full p-4 bg-background border border-border rounded-xl min-h-[100px] focus:ring-2 focus:ring-accent focus:border-accent resize-none text-primary"
+                      ></textarea>
                     </div>
-
-                    <div className="flex gap-4">
-                       <button 
-                         type="button"
-                         onClick={() => setSelectedTicket(null)}
-                         className="flex-1 py-4 bg-surface border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest text-primary hover:bg-white/5 transition-all"
-                       >
-                          Discard
-                       </button>
-                       <button 
-                         type="submit" 
-                         disabled={updating}
-                         className="flex-[2] py-4 bg-primary text-background rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-all shadow-xl shadow-primary/20 disabled:opacity-50"
-                       >
-                          {updating ? 'Synchronizing...' : 'Commit Changes'}
-                       </button>
-                    </div>
+                    <button 
+                      type="submit" 
+                      disabled={updating}
+                      className="w-full py-4 bg-primary text-background font-bold rounded-xl hover:bg-accent hover:text-background transition-colors disabled:opacity-70 flex justify-center items-center"
+                    >
+                      {updating ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Update Ticket'}
+                    </button>
                  </form>
               </div>
            </div>

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { User, ShieldCheck, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import API_URL from '../utils/api';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -40,7 +39,7 @@ export default function Auth() {
       : { ...formData, role };
 
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      const res = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -65,36 +64,36 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
+    <div className="min-h-[calc(100vh-80px)] w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 bg-surface rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/10 z-10">
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 bg-surface rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-border z-10">
         
         {/* Left Side: Branding/Visual */}
-        <div className="hidden lg:flex flex-col justify-between p-12 bg-primary dark:bg-zinc-900 relative">
+        <div className="hidden lg:flex flex-col justify-between p-12 bg-primary dark:bg-slate-950 relative border-r border-border">
           <div className="z-10">
-            <Link to="/home" className="inline-flex items-center gap-2 text-[#f4f0e8] font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-[#f4f0e8] rotate-3">H</div>
+            <Link to="/home" className="inline-flex items-center gap-2 text-background font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary rotate-3">H</div>
               Homely
             </Link>
-            <h1 className="text-5xl font-bold text-[#f4f0e8] leading-[1.1] mb-6">
+            <h1 className="text-5xl font-bold text-background leading-[1.1] mb-6">
               Find your perfect <br /> <span className="text-accent underline decoration-4 underline-offset-8">student home</span>
             </h1>
-            <p className="text-[#f4f0e8]/70 text-lg max-w-md leading-relaxed">
+            <p className="text-background/70 text-lg max-w-md leading-relaxed">
               Join thousands of students and hosts in India's most trusted marketplace for hostels and dining services.
             </p>
           </div>
 
           <div className="z-10 grid grid-cols-2 gap-6">
-            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
-              <p className="text-3xl font-bold text-[#f4f0e8] mb-1">10k+</p>
-              <p className="text-sm text-[#f4f0e8]/50 font-medium">Verified Listings</p>
+            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-border">
+              <p className="text-3xl font-bold text-background dark:text-primary mb-1">10k+</p>
+              <p className="text-sm text-background/50 dark:text-primary-light/50 font-medium">Verified Listings</p>
             </div>
-            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
-              <p className="text-3xl font-bold text-[#f4f0e8] mb-1">24/7</p>
-              <p className="text-sm text-[#f4f0e8]/50 font-medium">Host Support</p>
+            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-border">
+              <p className="text-3xl font-bold text-background dark:text-primary mb-1">24/7</p>
+              <p className="text-sm text-background/50 dark:text-primary-light/50 font-medium">Host Support</p>
             </div>
           </div>
 
@@ -142,7 +141,7 @@ export default function Auth() {
                     type="text"
                     required
                     placeholder="Enter your full name"
-                    className="w-full px-6 py-4 bg-background border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent outline-none text-primary font-medium transition-all"
+                    className="w-full px-6 py-4 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent outline-none text-primary font-medium transition-all"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -155,7 +154,7 @@ export default function Auth() {
                   type="email"
                   required
                   placeholder="name@example.com"
-                  className="w-full px-6 py-4 bg-background border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent outline-none text-primary font-medium transition-all"
+                  className="w-full px-6 py-4 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent outline-none text-primary font-medium transition-all"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
@@ -167,7 +166,7 @@ export default function Auth() {
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="w-full px-6 py-4 bg-background border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent outline-none text-primary font-medium transition-all"
+                  className="w-full px-6 py-4 bg-background border border-border rounded-2xl focus:ring-2 focus:ring-accent/50 focus:border-accent outline-none text-primary font-medium transition-all"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
@@ -180,7 +179,7 @@ export default function Auth() {
                     <button
                       type="button"
                       onClick={() => setRole('TENANT')}
-                      className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all group ${role === 'TENANT' ? 'border-accent bg-accent/5' : 'border-white/5 bg-background hover:border-white/10'}`}
+                      className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all group ${role === 'TENANT' ? 'border-accent bg-accent/5' : 'border-border/30 bg-background hover:border-border'}`}
                     >
                       <User className={`w-6 h-6 ${role === 'TENANT' ? 'text-accent' : 'text-taupe'}`} />
                       <span className={`text-sm font-bold ${role === 'TENANT' ? 'text-primary' : 'text-taupe'}`}>Find Rooms</span>
@@ -188,7 +187,7 @@ export default function Auth() {
                     <button
                       type="button"
                       onClick={() => setRole('HOST')}
-                      className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all group ${role === 'HOST' ? 'border-accent bg-accent/5' : 'border-white/5 bg-background hover:border-white/10'}`}
+                      className={`flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all group ${role === 'HOST' ? 'border-accent bg-accent/5' : 'border-border/30 bg-background hover:border-border'}`}
                     >
                       <ShieldCheck className={`w-6 h-6 ${role === 'HOST' ? 'text-accent' : 'text-taupe'}`} />
                       <span className={`text-sm font-bold ${role === 'HOST' ? 'text-primary' : 'text-taupe'}`}>List / Host</span>
@@ -200,7 +199,7 @@ export default function Auth() {
               <button 
                 type="submit" 
                 disabled={isLoading}
-                className="w-full bg-primary hover:opacity-90 text-background font-bold py-5 rounded-2xl transition-all shadow-xl hover:shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                className="w-full bg-primary hover:bg-accent text-background font-bold py-5 rounded-2xl transition-all shadow-xl hover:shadow-accent/20 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
               >
                 {isLoading ? (
                   <>

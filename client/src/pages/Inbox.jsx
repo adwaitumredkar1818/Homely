@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { Send, Search, User, Loader2, MessageSquare, Clock, ShieldCheck, ChevronLeft, Phone, MoreVertical } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import io from 'socket.io-client';
-import API_URL from '../utils/api';
 
 export default function Inbox() {
   const [conversations, setConversations] = useState([]);
@@ -25,7 +24,7 @@ export default function Inbox() {
       const initialUserId = location.state?.userId;
       if (initialUserId) {
         try {
-          const res = await fetch(`${API_URL}/api/user/${initialUserId}`, {
+          const res = await fetch(`http://localhost:5000/api/user/${initialUserId}`, {
              headers: { 'Authorization': `Bearer ${token}` }
           });
           const otherUser = await res.json();
@@ -44,7 +43,7 @@ export default function Inbox() {
       initInbox();
       
       // Socket setup
-      socketRef.current = io(API_URL);
+      socketRef.current = io('http://localhost:5000');
       socketRef.current.emit('join', `user_${user.id}`);
       
       socketRef.current.on('new_message', (message) => {
@@ -80,13 +79,13 @@ export default function Inbox() {
     scrollToBottom();
   }, [messages]);
 
-  const scrollToBottom = () => {
+  function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }
 
-  const fetchConversations = async () => {
+  async function fetchConversations() {
     try {
-      const res = await fetch(`${API_URL}/api/messages/conversations`, {
+      const res = await fetch('http://localhost:5000/api/messages/conversations', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -97,12 +96,12 @@ export default function Inbox() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const fetchMessages = async (otherUserId) => {
+  async function fetchMessages(otherUserId) {
     setMsgLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/messages/${otherUserId}`, {
+      const res = await fetch(`http://localhost:5000/api/messages/${otherUserId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -112,9 +111,9 @@ export default function Inbox() {
     } finally {
       setMsgLoading(false);
     }
-  };
+  }
 
-  const handleSendMessage = async (e) => {
+  async function handleSendMessage(e) {
     e.preventDefault();
     if (!newMessage.trim() || !selectedUser) return;
 
@@ -122,7 +121,7 @@ export default function Inbox() {
     setNewMessage('');
 
     try {
-      const res = await fetch(`${API_URL}/api/messages`, {
+      const res = await fetch('http://localhost:5000/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,12 +140,12 @@ export default function Inbox() {
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
-  const selectConversation = (otherUser) => {
+  function selectConversation(otherUser) {
     setSelectedUser(otherUser);
     fetchMessages(otherUser.id);
-  };
+  }
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-full">
@@ -159,15 +158,15 @@ export default function Inbox() {
     <div className="h-[calc(100vh-160px)] flex bg-surface rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* Sidebar: Conversations List */}
-      <div className={`w-full md:w-80 lg:w-96 border-r border-white/5 flex flex-col bg-primary/5 ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
-        <div className="p-6 border-b border-white/5 bg-surface/50 backdrop-blur-md sticky top-0 z-10">
+      <div className={`w-full md:w-80 lg:w-96 border-r border-white/10 flex flex-col bg-background/30 ${selectedUser ? 'hidden md:flex' : 'flex'}`}>
+        <div className="p-6 border-b border-white/10 bg-surface/50 backdrop-blur-md sticky top-0 z-10">
            <h2 className="text-2xl font-black text-primary mb-6">Inbox</h2>
            <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-taupe group-focus-within:text-accent transition-colors" />
               <input 
                 type="text" 
                 placeholder="Search conversations..." 
-                className="w-full pl-11 pr-4 py-3 bg-surface border border-white/10 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-accent/10 focus:border-accent/30 outline-none transition-all text-primary"
+                className="w-full pl-11 pr-4 py-3 bg-surface border border-white/10 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-accent/10 focus:border-accent/30 outline-none transition-all text-primary placeholder-taupe/40"
               />
            </div>
         </div>
@@ -177,10 +176,10 @@ export default function Inbox() {
            {selectedUser && !conversations.find(c => c.user.id === selectedUser.id) && (
               <button 
                 onClick={() => selectConversation(selectedUser)}
-                className="w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group bg-primary text-background shadow-xl shadow-primary/20 ring-1 ring-white/10"
+                className="w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group bg-primary text-white shadow-xl shadow-primary/20 ring-1 ring-white/10"
               >
                  <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center shrink-0 border border-white/20">
-                    <span className="text-lg font-black text-background">{selectedUser.name.charAt(0)}</span>
+                    <span className="text-lg font-black text-white">{selectedUser.name.charAt(0)}</span>
                  </div>
                  <div className="flex-1 text-left min-w-0">
                     <div className="flex justify-between items-start mb-1">
@@ -192,15 +191,15 @@ export default function Inbox() {
               </button>
            )}
 
-           {conversations.length > 0 ? conversations.map((conv) => (
-             <button 
-               key={conv.user.id}
-               onClick={() => selectConversation(conv.user)}
-               className={`w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group ${selectedUser?.id === conv.user.id ? 'bg-primary text-background shadow-xl shadow-primary/20 ring-1 ring-white/10' : 'hover:bg-surface hover:shadow-lg hover:shadow-black/5'}`}
-             >
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center shrink-0 border border-white/20">
-                   <span className={`text-lg font-black ${selectedUser?.id === conv.user.id ? 'text-background' : 'text-accent'}`}>{conv.user.name.charAt(0)}</span>
-                </div>
+            {conversations.length > 0 ? conversations.map((conv) => (
+              <button 
+                key={conv.user.id}
+                onClick={() => selectConversation(conv.user)}
+                className={`w-full p-4 rounded-2xl flex gap-4 transition-all duration-300 relative group ${selectedUser?.id === conv.user.id ? 'bg-primary text-background shadow-xl shadow-primary/20 ring-1 ring-white/10' : 'hover:bg-background hover:shadow-lg'}`}
+              >
+                 <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center shrink-0 border border-white/20">
+                    <span className={`text-lg font-black ${selectedUser?.id === conv.user.id ? 'text-background' : 'text-accent'}`}>{conv.user.name.charAt(0)}</span>
+                 </div>
                 <div className="flex-1 text-left min-w-0">
                    <div className="flex justify-between items-start mb-1">
                       <p className="font-bold truncate pr-2">{conv.user.name}</p>
@@ -208,13 +207,13 @@ export default function Inbox() {
                          {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                    </div>
-                   <p className={`text-xs truncate font-medium ${selectedUser?.id === conv.user.id ? 'text-background/80' : 'text-taupe'}`}>
-                      {conv.lastMessage.content}
-                   </p>
-                </div>
-                {selectedUser?.id === conv.user.id && (
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-background rounded-l-full" />
-                )}
+                    <p className={`text-xs truncate font-medium ${selectedUser?.id === conv.user.id ? 'text-background/80' : 'text-taupe'}`}>
+                       {conv.lastMessage.content}
+                    </p>
+                 </div>
+                 {selectedUser?.id === conv.user.id && (
+                   <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-background rounded-l-full" />
+                 )}
              </button>
            )) : !selectedUser && (
              <div className="text-center py-12 px-6">
@@ -230,9 +229,9 @@ export default function Inbox() {
          {selectedUser ? (
            <>
              {/* Chat Header */}
-             <div className="h-20 px-8 border-b border-white/5 flex items-center justify-between bg-surface/80 backdrop-blur-md sticky top-0 z-20">
+             <div className="h-20 px-8 border-b border-white/10 flex items-center justify-between bg-surface/80 backdrop-blur-md sticky top-0 z-20">
                 <div className="flex items-center gap-4">
-                   <button onClick={() => setSelectedUser(null)} className="md:hidden p-2 hover:bg-primary/10 rounded-full transition-colors">
+                   <button onClick={() => setSelectedUser(null)} className="md:hidden p-2 hover:bg-background rounded-full transition-colors">
                       <ChevronLeft className="w-6 h-6 text-primary" />
                    </button>
                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-background font-bold shadow-md">
@@ -254,7 +253,7 @@ export default function Inbox() {
              </div>
 
              {/* Messages Area */}
-             <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-primary/5">
+             <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-background/20">
                 {msgLoading ? (
                   <div className="flex items-center justify-center h-full">
                      <Loader2 className="w-8 h-8 text-accent animate-spin" />
@@ -270,9 +269,9 @@ export default function Inbox() {
                       const isMe = msg.senderId === user.id;
                       return (
                         <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-2 duration-300`}>
-                           <div className={`max-w-[75%] sm:max-w-[60%] p-5 rounded-3xl text-sm font-medium shadow-lg relative ${isMe ? 'bg-primary text-background rounded-br-none shadow-primary/20' : 'bg-surface text-primary border border-white/10 rounded-bl-none shadow-black/10'}`}>
+                           <div className={`max-w-[75%] sm:max-w-[60%] p-5 rounded-3xl text-sm font-medium shadow-lg relative ${isMe ? 'bg-primary text-background rounded-br-none shadow-primary/20' : 'bg-surface text-primary border border-white/10 rounded-bl-none shadow-gray-200/30'}`}>
                               {msg.content}
-                              <p className={`text-[10px] mt-2 font-bold opacity-50 ${isMe ? 'text-background text-right' : 'text-taupe'}`}>
+                              <p className={`text-[10px] mt-2 font-bold opacity-50 ${isMe ? 'text-white text-right' : 'text-taupe'}`}>
                                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
                            </div>
@@ -293,8 +292,8 @@ export default function Inbox() {
              </div>
 
              {/* Input Area */}
-             <div className="p-6 bg-surface border-t border-white/5">
-                <form onSubmit={handleSendMessage} className="flex gap-4 p-2 bg-primary/5 rounded-[2rem] border border-white/5 focus-within:border-accent/30 focus-within:ring-4 focus-within:ring-accent/5 transition-all">
+             <div className="p-6 bg-surface border-t border-white/10">
+                <form onSubmit={handleSendMessage} className="flex gap-4 p-2 bg-background rounded-[2rem] border border-white/10 focus-within:border-accent/30 focus-within:ring-4 focus-within:ring-accent/5 transition-all">
                    <input 
                      type="text" 
                      value={newMessage}
@@ -304,18 +303,18 @@ export default function Inbox() {
                    />
                    <button 
                      disabled={!newMessage.trim()}
-                     className="p-3 bg-primary text-background rounded-full hover:bg-accent hover:text-white transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95"
+                     className="p-3 bg-primary text-background rounded-full hover:bg-accent transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95 flex items-center justify-center"
                    >
-                      <Send className="w-5 h-5" />
+                      <Send className="w-5 h-5 text-background" />
                    </button>
                 </form>
              </div>
            </>
          ) : (
-           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-primary/5">
+           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-background/10">
               <div className="w-24 h-24 bg-accent/5 rounded-full flex items-center justify-center mb-8 relative">
                  <MessageSquare className="w-12 h-12 text-accent/20" />
-                 <div className="absolute top-0 right-0 w-6 h-6 bg-accent border-4 border-surface rounded-full animate-pulse" />
+                 <div className="absolute top-0 right-0 w-6 h-6 bg-accent border-4 border-white/10 rounded-full animate-pulse" />
               </div>
               <h3 className="text-3xl font-black text-primary mb-4 tracking-tight">Your Communication Hub</h3>
               <p className="text-taupe font-medium max-w-sm mx-auto leading-relaxed">
