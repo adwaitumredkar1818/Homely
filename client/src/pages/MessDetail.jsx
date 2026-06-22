@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Star, Heart, Share, ChevronLeft, Utensils, MapPin, Clock, Shield, Calendar, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
 import Map from '../components/Map';
+import SimilarListings from '../components/SimilarListings';
+import CheckoutModal from '../components/CheckoutModal';
 import { useAuth } from '../context/AuthContext';
 
 export default function MessDetail() {
@@ -12,10 +14,22 @@ export default function MessDetail() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const { user, token } = useAuth();
 
+  // Review states
+  const [reviewRatings, setReviewRatings] = useState({ taste: 5, hygiene: 5, variety: 5, value: 5 });
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewImage, setReviewImage] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
   useEffect(() => {
-    fetch(`http://localhost:5000/api/messes/${id}`)
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    fetch(`http://localhost:5000/api/messes/${id}`, { headers })
       .then(res => res.json())
       .then(data => {
         if (!data.error) {
@@ -94,6 +108,57 @@ export default function MessDetail() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      navigate('/auth', { state: { from: window.location.pathname } });
+      return;
+    }
+    if (!reviewComment.trim()) {
+      alert('Please enter a comment.');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/messes/${id}/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...reviewRatings,
+          comment: reviewComment,
+          imageUrl: reviewImage || null
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refresh details
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        fetch(`http://localhost:5000/api/messes/${id}`, { headers })
+          .then(r => r.json())
+          .then(d => {
+            if (!d.error) setMess(d);
+          });
+        // Clear form
+        setReviewComment('');
+        setReviewImage('');
+        setReviewRatings({ taste: 5, hygiene: 5, variety: 5, value: 5 });
+        alert('Review submitted successfully!');
+      } else {
+        alert(data.error || 'Failed to submit review');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -284,7 +349,13 @@ export default function MessDetail() {
                  </div>
                ) : (
                  <button 
-                   onClick={handleSubscribe} 
+                   onClick={() => {
+                     if (!user) {
+                       navigate('/auth', { state: { from: window.location.pathname } });
+                       return;
+                     }
+                     setIsCheckoutOpen(true);
+                   }} 
                    disabled={isSubscribing}
                    className="w-full bg-primary hover:bg-accent text-background font-bold py-4 rounded-2xl transition-all mb-4 text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
                  >
@@ -350,8 +421,13 @@ export default function MessDetail() {
                     <p className="text-xs font-black uppercase text-taupe mb-2">{cat}</p>
                     <div className="flex gap-1">
                        {[1,2,3,4,5].map(star => (
-                          <button key={star} onClick={() => {}} className="p-1 hover:scale-110 transition-transform">
-                             <Star className="w-5 h-5 text-accent/20 hover:text-accent" />
+                          <button 
+                             key={star} 
+                             type="button"
+                             onClick={() => setReviewRatings(prev => ({ ...prev, [cat]: star }))} 
+                             className="p-1 hover:scale-110 transition-transform"
+                          >
+                             <Star className={`w-5 h-5 ${star <= reviewRatings[cat] ? 'fill-accent text-accent' : 'text-accent/20'}`} />
                           </button>
                        ))}
                     </div>
@@ -360,16 +436,24 @@ export default function MessDetail() {
            </div>
            <textarea 
              placeholder="What did you think about the food and service?" 
+             value={reviewComment}
+             onChange={(e) => setReviewComment(e.target.value)}
              className="w-full bg-background border border-white/5 rounded-2xl p-6 text-primary outline-none focus:ring-2 focus:ring-accent/30 mb-6 min-h-[120px]"
            />
            <div className="flex flex-col sm:flex-row gap-4">
               <input 
                 type="text" 
                 placeholder="Image URL (optional)" 
+                value={reviewImage}
+                onChange={(e) => setReviewImage(e.target.value)}
                 className="flex-1 bg-background border border-white/5 rounded-2xl px-6 py-4 text-primary outline-none focus:ring-2 focus:ring-accent/30"
               />
-              <button className="px-12 py-4 bg-accent text-background font-black rounded-2xl hover:scale-105 transition-transform shadow-lg shadow-accent/20 uppercase tracking-widest text-xs">
-                Submit Review
+              <button 
+                 onClick={handleSubmitReview}
+                 disabled={isSubmittingReview}
+                 className="px-12 py-4 bg-accent text-background font-black rounded-2xl hover:scale-105 transition-transform shadow-lg shadow-accent/20 uppercase tracking-widest text-xs disabled:opacity-50"
+              >
+                {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
               </button>
            </div>
         </div>
@@ -405,7 +489,16 @@ export default function MessDetail() {
              </div>
           )}
         </div>
+        <SimilarListings type="messes" id={mess.id} />
       </div>
+
+      <CheckoutModal 
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        amount={mess.price}
+        itemTitle={mess.name}
+        onConfirm={handleSubscribe}
+      />
     </div>
   );
 }

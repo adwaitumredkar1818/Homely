@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Star, Heart, Share, ChevronLeft, Wifi, Car, Coffee, Wind, Tv, Shield, Utensils, MessageCircle } from 'lucide-react';
 import Map from '../components/Map';
+import SimilarListings from '../components/SimilarListings';
+import CheckoutModal from '../components/CheckoutModal';
 import { useAuth } from '../context/AuthContext';
 
 export default function RoomDetail() {
@@ -16,6 +18,7 @@ export default function RoomDetail() {
   });
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -270,15 +273,24 @@ export default function RoomDetail() {
                 </div>
              </div>
 
-             {isBooked ? (
-               <div className="w-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 font-bold py-3 rounded-lg text-center mb-4 text-lg">
-                  Booking Confirmed!
-               </div>
-             ) : (
-               <button onClick={handleBooking} className="w-full bg-accent hover:bg-black text-white font-bold py-3 rounded-lg transition-colors mb-4 text-lg cursor-pointer">
-                  Book a meeting
-               </button>
-             )}
+              {isBooked ? (
+                <div className="w-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 font-bold py-3 rounded-lg text-center mb-4 text-lg">
+                   Booking Confirmed!
+                </div>
+              ) : (
+                <button 
+                  onClick={() => {
+                    if (!user) {
+                      navigate('/auth', { state: { from: location.pathname } });
+                      return;
+                    }
+                    setIsCheckoutOpen(true);
+                  }} 
+                  className="w-full bg-accent hover:bg-black text-white font-bold py-3 rounded-lg transition-colors mb-4 text-lg cursor-pointer"
+                >
+                   Book Hostel Room
+                </button>
+              )}
 
              <button 
                 onClick={() => {
@@ -452,6 +464,15 @@ export default function RoomDetail() {
         </div>
       </div>
 
+      <SimilarListings type="rooms" id={room.id} />
+
+      <CheckoutModal 
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        amount={(room.price * 3) + 800}
+        itemTitle={room.title}
+        onConfirm={handleBooking}
+      />
     </div>
   );
 }

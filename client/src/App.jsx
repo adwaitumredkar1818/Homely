@@ -12,6 +12,12 @@ import Inbox from './pages/Inbox';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import Maintenance from './pages/host/Maintenance';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import EditProperty from './pages/host/EditProperty';
+import Messes from './pages/host/Messes';
+import Hub from './pages/Hub';
+import Verification from './pages/Verification';
+import ForgotPassword from './pages/ForgotPassword';
 
 function PublicLayout() {
   return (
@@ -31,21 +37,26 @@ function App() {
         {/* Auth Route */}
         <Route path="/" element={<Auth />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
 
         {/* Public Routes - Includes Navbar */}
-        <Route element={<PublicLayout />}>
+        <Route element={<ProtectedRoute><PublicLayout /></ProtectedRoute>}>
           <Route path="/home" element={<Home />} />
           <Route path="/room/:id" element={<RoomDetail />} />
           <Route path="/mess/:id" element={<MessDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/inbox" element={<Inbox />} />
+          <Route path="/hub" element={<Hub />} />
+          <Route path="/verification" element={<Verification />} />
         </Route>
 
         {/* Host Routes - Sidebar Admin Layout */}
-        <Route path="/host" element={<HostLayout />}>
+        <Route path="/host" element={<ProtectedRoute allowedRoles={['HOST']}><HostLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="properties" element={<Properties />} />
           <Route path="properties/new" element={<CreateProperty />} />
+          <Route path="properties/edit/:id" element={<EditProperty />} />
+          <Route path="messes" element={<Messes />} />
           <Route path="reservations" element={<Reservations />} />
           <Route path="inbox" element={<Inbox />} />
           <Route path="maintenance" element={<Maintenance />} />

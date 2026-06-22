@@ -3,6 +3,7 @@ import { Wallet, BedDouble, CalendarCheck, TrendingUp, Loader2, Utensils, Wrench
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 export default function Dashboard() {
   const { token } = useAuth();
@@ -152,32 +153,50 @@ export default function Dashboard() {
             </div>
           </div>
      
-          <div className="h-56 flex items-end gap-2 md:gap-4 pt-8">
-            {data?.monthlyStats.map((stat, idx) => {
-              const maxRevenue = Math.max(...data.monthlyStats.map(s => s.revenue), 1);
-              const height = (stat.revenue / maxRevenue) * 100;
-              
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center gap-4 group h-full justify-end">
-                  <div className="relative w-full flex flex-col items-center justify-end h-full">
-                     {/* Tooltip */}
-                     <div className="absolute bottom-full mb-4 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 bg-primary text-background px-3 py-2 rounded-xl text-[10px] font-black whitespace-nowrap z-10 pointer-events-none shadow-xl border border-border">
-                        ₹{stat.revenue.toLocaleString('en-IN')}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-primary" />
-                     </div>
-                     
-                     {/* Bar */}
-                     <div 
-                        className="w-full bg-accent/30 rounded-t-xl group-hover:bg-accent transition-all duration-500 cursor-help relative overflow-hidden" 
-                        style={{ height: `${height}%`, minHeight: stat.revenue > 0 ? '8px' : '2px' }}
-                     >
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                     </div>
-                  </div>
-                  <span className="text-[10px] font-black text-taupe group-hover:text-primary transition-colors">{stat.month}</span>
-                </div>
-              );
-            })}
+          <div className="h-64 pt-8">
+            {data?.monthlyStats && (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.monthlyStats} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-accent, #c1a57b)" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="var(--color-accent, #c1a57b)" stopOpacity={0.2}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: 'var(--color-taupe, #9a8a78)', fontSize: 10, fontWeight: 'bold' }} 
+                  />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: 'var(--color-taupe, #9a8a78)', fontSize: 10, fontWeight: 'bold' }} 
+                    tickFormatter={(val) => `₹${val}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'var(--color-surface, #201b19)', 
+                      borderColor: 'rgba(255,255,255,0.1)', 
+                      borderRadius: '16px',
+                      color: 'var(--color-primary, #eae6df)',
+                      fontFamily: 'sans-serif',
+                      fontWeight: 'bold',
+                      fontSize: '12px'
+                    }}
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                    formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, 'Revenue']}
+                  />
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="url(#colorRevenue)" 
+                    radius={[10, 10, 0, 0]} 
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 

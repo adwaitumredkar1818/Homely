@@ -101,6 +101,18 @@ export default function Profile() {
                 <span className="inline-flex items-center px-3 py-1 bg-accent/10 text-accent rounded-full text-xs font-bold tracking-wider uppercase">
                   <Shield className="w-3 h-3 mr-1" /> {user?.role}
                 </span>
+                {profileData?.user?.isVerified ? (
+                  <span className="inline-flex items-center px-3 py-1 bg-green-500/10 text-green-500 rounded-full text-xs font-bold tracking-wider uppercase">
+                    <CheckCircle2 className="w-3 h-3 mr-1" /> Verified User
+                  </span>
+                ) : (
+                  <Link 
+                    to="/verification"
+                    className="inline-flex items-center px-3 py-1 bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 rounded-full text-xs font-bold tracking-wider uppercase transition-colors"
+                  >
+                    <AlertCircle className="w-3 h-3 mr-1" /> Get Verified
+                  </Link>
+                )}
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-4 text-taupe font-medium">
                 <div className="flex items-center gap-2">
@@ -338,7 +350,7 @@ export default function Profile() {
                                  </button>
                                )}
                                <button 
-                                 onClick={() => navigate(booking.type === 'ROOM' ? `/room/${booking.roomId}` : `/home`)}
+                                 onClick={() => navigate(booking.type === 'ROOM' ? `/room/${booking.roomId}` : `/mess/${booking.roomId}`)}
                                  className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
                                >
                                  View Details
@@ -422,7 +434,7 @@ export default function Profile() {
                         return (
                           <Link 
                             key={item.id}
-                            to={type === 'room' ? `/room/${target.id}` : `/home`}
+                            to={type === 'room' ? `/room/${target.id}` : `/mess/${target.id}`}
                             className="group bg-background rounded-[2rem] border border-white/5 overflow-hidden hover:border-accent/30 transition-all hover:shadow-2xl"
                           >
                             <div className="aspect-video relative overflow-hidden">

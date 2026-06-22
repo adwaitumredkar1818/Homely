@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Menu, User, LogOut, LayoutDashboard, Moon, Sun, MessageSquare } from 'lucide-react';
+import { Search, Menu, User, LogOut, LayoutDashboard, Moon, Sun, MessageSquare, Bell } from 'lucide-react';
 import CreatePropertyModal from '../CreatePropertyModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import io from 'socket.io-client';
 
 const ThemeSlider = ({ theme, toggleTheme }) => (
   <div className="flex items-center justify-between px-4 py-3 bg-primary/5 dark:bg-white/5 rounded-xl mt-2 mx-4 mb-2 group">
@@ -35,12 +36,62 @@ export default function Navbar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const { user, logout } = useAuth();
+  const { user, token } = useAuth();
+  const { logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  // Notification States
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     setSearchTerm(searchParams.get('search') || '');
   }, [searchParams]);
+
+  useEffect(() => {
+    if (user?.id && token) {
+      // Fetch initial notifications
+      fetch('http://localhost:5000/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setNotifications(data);
+        }
+      })
+      .catch(err => console.error(err));
+
+      // Connect socket
+      const socket = io('http://localhost:5000');
+      socket.emit('join', user.id);
+
+      socket.on('new_notification', (notif) => {
+        setNotifications(prev => [notif, ...prev]);
+      });
+
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [user?.id, token]);
+
+  const markAsRead = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
@@ -83,13 +134,92 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
-            {user?.role === 'HOST' && (
+            {user?.role === 'HOST' ? (
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
               >
                 List property
               </button>
+            ) : (
+              <Link 
+                to="/hub"
+                className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
+              >
+                Hub
+              </Link>
+            )}
+
+            {/* Notifications Bell */}
+            {user && (
+              <div className="relative mr-2">
+                <button
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setShowDropdown(false);
+                  }}
+                  className="p-3 text-taupe hover:text-primary hover:bg-background rounded-full transition-all relative border border-white/10"
+                >
+                  <Bell className="w-5 h-5" />
+                  {notifications.filter(n => !n.isRead).length > 0 && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-accent text-background text-[9px] font-black rounded-full flex items-center justify-center">
+                      {notifications.filter(n => !n.isRead).length}
+                    </span>
+                  )}
+                </button>
+
+                {showNotifications && (
+                  <div className="absolute right-0 mt-3 w-80 bg-surface rounded-2xl shadow-2xl border border-white/10 py-3 z-[150] animate-in fade-in slide-in-from-top-2 max-h-96 overflow-y-auto custom-scrollbar">
+                    <div className="px-4 py-2 border-b border-white/5 flex justify-between items-center mb-2">
+                      <p className="font-bold text-primary">Notifications</p>
+                      {notifications.filter(n => !n.isRead).length > 0 && (
+                        <button
+                          onClick={async () => {
+                            for (const n of notifications.filter(n => !n.isRead)) {
+                              await markAsRead(n.id);
+                            }
+                          }}
+                          className="text-[10px] font-black uppercase text-accent hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    {notifications.length > 0 ? (
+                      <div className="divide-y divide-white/5">
+                        {notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              markAsRead(notif.id);
+                              if (notif.link) {
+                                navigate(notif.link);
+                              }
+                              setShowNotifications(false);
+                            }}
+                            className={`p-4 flex gap-3 hover:bg-white/5 transition-all cursor-pointer text-left ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                          >
+                            <div className="flex-1 space-y-1">
+                              <div className="flex justify-between items-start">
+                                <p className={`text-xs font-bold ${!notif.isRead ? 'text-primary' : 'text-taupe'}`}>{notif.title}</p>
+                                {!notif.isRead && <div className="w-1.5 h-1.5 bg-accent rounded-full mt-1.5 shrink-0" />}
+                              </div>
+                              <p className="text-[11px] text-taupe/80 leading-relaxed font-medium">{notif.message}</p>
+                              <p className="text-[9px] text-taupe/40 font-bold">
+                                {new Date(notif.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-taupe font-bold text-sm">
+                        No notifications yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             <div className="relative">
@@ -123,6 +253,13 @@ export default function Navbar() {
                         className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
                       >
                         <LayoutDashboard className="w-4 h-4" /> Dashboard
+                      </Link>
+                      <Link 
+                        to="/hub" 
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
+                      >
+                        <SlidersHorizontal className="w-4 h-4" /> Community Hub
                       </Link>
                       <Link 
                         to="/inbox" 

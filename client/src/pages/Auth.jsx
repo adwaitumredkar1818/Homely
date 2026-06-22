@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { User, ShieldCheck, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { User, ShieldCheck, ArrowLeft, Loader2, CheckCircle2, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState('TENANT');
@@ -65,6 +67,17 @@ export default function Auth() {
 
   return (
     <div className="min-h-[calc(100vh-80px)] w-full flex items-center justify-center p-4 bg-background relative overflow-hidden">
+      {/* Floating Theme Toggle */}
+      <div className="absolute top-6 right-6 z-50">
+        <button
+          onClick={toggleTheme}
+          type="button"
+          className="p-3.5 bg-surface border border-border rounded-full hover:bg-background transition-all shadow-lg text-primary cursor-pointer hover:scale-105 active:scale-95"
+        >
+          {theme === 'light' ? <Moon className="w-5 h-5 text-indigo-500 fill-indigo-500" /> : <Sun className="w-5 h-5 text-amber-500 fill-amber-500" />}
+        </button>
+      </div>
+
       {/* Decorative background elements */}
       <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
@@ -72,28 +85,28 @@ export default function Auth() {
       <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 bg-surface rounded-[2.5rem] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-border z-10">
         
         {/* Left Side: Branding/Visual */}
-        <div className="hidden lg:flex flex-col justify-between p-12 bg-primary dark:bg-slate-950 relative border-r border-border">
+        <div className="hidden lg:flex flex-col justify-between p-12 bg-primary dark:bg-slate-950 relative border-r border-white/10">
           <div className="z-10">
-            <Link to="/home" className="inline-flex items-center gap-2 text-background font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
-              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-primary rotate-3">H</div>
+            <Link to="/home" className="inline-flex items-center gap-2 text-zinc-100 font-bold text-xl mb-12 hover:opacity-80 transition-opacity">
+              <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-white rotate-3">H</div>
               Homely
             </Link>
-            <h1 className="text-5xl font-bold text-background leading-[1.1] mb-6">
+            <h1 className="text-5xl font-bold text-zinc-100 leading-[1.1] mb-6">
               Find your perfect <br /> <span className="text-accent underline decoration-4 underline-offset-8">student home</span>
             </h1>
-            <p className="text-background/70 text-lg max-w-md leading-relaxed">
+            <p className="text-zinc-300 text-lg max-w-md leading-relaxed">
               Join thousands of students and hosts in India's most trusted marketplace for hostels and dining services.
             </p>
           </div>
 
           <div className="z-10 grid grid-cols-2 gap-6">
-            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-border">
-              <p className="text-3xl font-bold text-background dark:text-primary mb-1">10k+</p>
-              <p className="text-sm text-background/50 dark:text-primary-light/50 font-medium">Verified Listings</p>
+            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
+              <p className="text-3xl font-bold text-zinc-100 mb-1">10k+</p>
+              <p className="text-sm text-zinc-400 font-medium">Verified Listings</p>
             </div>
-            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-border">
-              <p className="text-3xl font-bold text-background dark:text-primary mb-1">24/7</p>
-              <p className="text-sm text-background/50 dark:text-primary-light/50 font-medium">Host Support</p>
+            <div className="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
+              <p className="text-3xl font-bold text-zinc-100 mb-1">24/7</p>
+              <p className="text-sm text-zinc-400 font-medium">Host Support</p>
             </div>
           </div>
 
@@ -161,7 +174,14 @@ export default function Auth() {
               </div>
 
               <div className="group">
-                <label className="block text-xs font-bold text-taupe uppercase tracking-widest mb-2 ml-1 group-focus-within:text-accent transition-colors">Password</label>
+                <div className="flex justify-between items-center mb-2 ml-1">
+                  <label className="block text-xs font-bold text-taupe uppercase tracking-widest group-focus-within:text-accent transition-colors">Password</label>
+                  {isLogin && (
+                    <Link to="/forgot-password" className="text-xs font-bold text-accent hover:underline">
+                      Forgot Password?
+                    </Link>
+                  )}
+                </div>
                 <input
                   type="password"
                   required

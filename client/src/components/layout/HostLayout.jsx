@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Building, PlusSquare, Inbox, Calendar, LogOut, User, LayoutDashboard, ChevronDown, Wrench, Sun, Moon, Menu } from 'lucide-react';
+import { Home, Building, PlusSquare, Inbox, Calendar, LogOut, User, LayoutDashboard, ChevronDown, Wrench, Sun, Moon, Menu, Utensils, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -39,9 +39,11 @@ export default function HostLayout() {
     { name: 'Dashboard', href: '/host', icon: Home },
     { name: 'My Properties', href: '/host/properties', icon: Building },
     { name: 'Add Listing', href: '/host/properties/new', icon: PlusSquare },
+    { name: 'My Messes', href: '/host/messes', icon: Utensils },
     { name: 'Reservations', href: '/host/reservations', icon: Calendar },
     { name: 'Inbox', href: '/host/inbox', icon: Inbox },
     { name: 'Maintenance', href: '/host/maintenance', icon: Wrench },
+    { name: 'Community Hub', href: '/hub', icon: MessageSquare },
   ];
 
   const handleLogout = () => {
@@ -122,6 +124,13 @@ export default function HostLayout() {
                         className="flex items-center gap-3 px-5 py-3 text-primary hover:bg-background/50 transition-colors font-semibold"
                       >
                         <User className="w-4 h-4" /> Personal Profile
+                      </Link>
+                      <Link 
+                        to="/hub" 
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-3 px-5 py-3 text-primary hover:bg-background/50 transition-colors font-semibold"
+                      >
+                        <MessageSquare className="w-4 h-4" /> Community Hub
                       </Link>
                       
                       <Link 

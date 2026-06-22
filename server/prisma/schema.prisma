@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "sqlite" // Change to "postgresql" to migrate to Supabase/PostgreSQL
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -30,6 +30,7 @@ model User {
   messReviews   MessReview[]
   wishlist      Wishlist[]
   maintenanceRequests MaintenanceRequest[]
+  notifications       Notification[]
 }
 
 model Room {
@@ -196,4 +197,16 @@ model Wishlist {
   room    Room? @relation(fields: [roomId], references: [id])
   messId  Int?
   mess    Mess? @relation(fields: [messId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // e.g. "BOOKING", "MESSAGE", "MAINTENANCE"
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
 }

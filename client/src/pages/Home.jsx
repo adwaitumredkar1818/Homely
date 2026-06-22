@@ -18,6 +18,10 @@ export default function Home() {
   const [messes, setMesses] = useState([]);
   const { user } = useAuth();
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   useEffect(() => {
     if (user?.role === 'HOST') {
       navigate('/host');
@@ -26,21 +30,67 @@ export default function Home() {
 
   useEffect(() => {
     setLoading(true);
-    const qParams = new URLSearchParams(searchParams).toString();
+    setPage(1);
+    const qParams = new URLSearchParams(searchParams);
     const endpoint = activeMode === 'rooms' ? 'rooms' : 'messes';
 
-    fetch(`http://localhost:5000/api/${endpoint}?${qParams}`)
+    if (viewMode === 'list') {
+      qParams.set('page', '1');
+      qParams.set('limit', '8');
+    }
+
+    fetch(`http://localhost:5000/api/${endpoint}?${qParams.toString()}`)
       .then(res => res.json())
       .then(data => {
-        if (activeMode === 'rooms') setRooms(data);
-        else setMesses(data);
+        if (viewMode === 'list') {
+          if (activeMode === 'rooms') {
+            setRooms(data.rooms || []);
+          } else {
+            setMesses(data.messes || []);
+          }
+          setHasMore(data.hasMore || false);
+        } else {
+          if (activeMode === 'rooms') {
+            setRooms(Array.isArray(data) ? data : (data.rooms || []));
+          } else {
+            setMesses(Array.isArray(data) ? data : (data.messes || []));
+          }
+          setHasMore(false);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error(`Failed to fetch ${activeMode}:`, err);
         setLoading(false);
       });
-  }, [searchParams, activeMode]);
+  }, [searchParams, activeMode, viewMode]);
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    const qParams = new URLSearchParams(searchParams);
+    qParams.set('page', nextPage.toString());
+    qParams.set('limit', '8');
+    const endpoint = activeMode === 'rooms' ? 'rooms' : 'messes';
+
+    fetch(`http://localhost:5000/api/${endpoint}?${qParams.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        if (activeMode === 'rooms') {
+          setRooms(prev => [...prev, ...(data.rooms || [])]);
+        } else {
+          setMesses(prev => [...prev, ...(data.messes || [])]);
+        }
+        setHasMore(data.hasMore || false);
+        setPage(nextPage);
+        setLoadingMore(false);
+      })
+      .catch(err => {
+        console.error('Failed to load more:', err);
+        setLoadingMore(false);
+      });
+  };
 
   const handleApplyFilters = (filters) => {
     const currentSearch = searchParams.get('search') || '';
@@ -148,20 +198,33 @@ export default function Home() {
              <p className="text-gray-500">Try adjusting your search location or term to find more options.</p>
           </div>
         ) : (
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 transition-opacity duration-500`}>
-            {activeMode === 'rooms' 
-              ? rooms.map((room, idx) => (
-                  <div key={`${room.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
-                    <RoomCard room={room} />
-                  </div>
-                ))
-              : messes.map((mess, idx) => (
-                  <div key={`${mess.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
-                    <MessCard mess={mess} />
-                  </div>
-                ))
-            }
-          </div>
+          <>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 transition-opacity duration-500`}>
+              {activeMode === 'rooms' 
+                ? rooms.map((room, idx) => (
+                    <div key={`${room.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
+                      <RoomCard room={room} />
+                    </div>
+                  ))
+                : messes.map((mess, idx) => (
+                    <div key={`${mess.id}-${activeMode}`} style={{ animationDelay: `${idx * 40}ms` }} className="animate-bloom">
+                      <MessCard mess={mess} />
+                    </div>
+                  ))
+              }
+            </div>
+            {hasMore && (
+              <div className="flex justify-center mt-12 mb-6">
+                <button 
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-8 py-3.5 bg-primary text-background hover:bg-black font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  {loadingMore ? 'Loading...' : 'Load More Listings'}
+                </button>
+              </div>
+            )}
+          </>
         )
       ) : (
         <div className="w-full h-[600px] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl relative">

@@ -44,7 +44,9 @@
 }
 
 body {
-  @apply bg-background text-primary transition-colors duration-300;
+  background-color: var(--background);
+  color: var(--primary);
+  transition: color 300ms, background-color 300ms, border-color 300ms;
 }
 
 /* Premium Custom Scrollbars */

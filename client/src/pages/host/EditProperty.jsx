@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Wifi, Car, Coffee, Wind, Tv, Shield, Utensils, Check, Plus, Loader2, MapPin, Trash2, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Wifi, Car, Coffee, Wind, Tv, Shield, Utensils, Check, Save, Loader2, MapPin, Trash2, Image as ImageIcon } from 'lucide-react';
 import { APIProvider, Map as GoogleMap, AdvancedMarker } from '@vis.gl/react-google-maps';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,10 +14,12 @@ const AMENITY_OPTIONS = [
   { id: 'Mess Service', icon: Utensils },
 ];
 
-export default function CreateProperty() {
+export default function EditProperty() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { token } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState([]);
   
@@ -30,6 +32,44 @@ export default function CreateProperty() {
     lng: 73.8567,
     amenities: []
   });
+
+  useEffect(() => {
+    fetchRoomDetails();
+  }, [id, token]);
+
+  const fetchRoomDetails = async () => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`);
+      if (!res.ok) {
+        throw new Error('Room not found');
+      }
+      const data = await res.json();
+      
+      // Load room into state
+      setFormData({
+        title: data.title || '',
+        description: data.description || '',
+        price: data.price || '',
+        location: data.location || '',
+        lat: data.lat || 18.5204,
+        lng: data.lng || 73.8567,
+        amenities: Array.isArray(data.amenities) ? data.amenities : []
+      });
+
+      // Load existing images
+      if (data.image) {
+        setImages([data.image]);
+      } else {
+        setImages([]);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load property details.');
+      navigate('/host/properties');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleAmenity = (id) => {
     setFormData(prev => ({
@@ -86,10 +126,10 @@ export default function CreateProperty() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     try {
-      const res = await fetch('http://localhost:5000/api/rooms', {
-        method: 'POST',
+      const res = await fetch(`http://localhost:5000/api/rooms/${id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -103,21 +143,30 @@ export default function CreateProperty() {
       if (data.success) {
         navigate('/host/properties');
       } else {
-        alert(data.error || 'Failed to create listing');
+        alert(data.error || 'Failed to update listing');
       }
     } catch (err) {
       console.error(err);
       alert('Network error. Please try again.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <Loader2 className="w-10 h-10 text-accent animate-spin mb-4" />
+        <p className="text-taupe font-bold text-lg">Loading listing details...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="mb-8">
-        <h1 className="text-4xl font-black text-primary tracking-tight">List a New Property</h1>
-        <p className="text-taupe font-semibold mt-2">Share your space with the student community and start earning.</p>
+        <h1 className="text-4xl font-black text-primary tracking-tight">Edit Property</h1>
+        <p className="text-taupe font-semibold mt-2">Update listing details, price, amenities, and showcase photos.</p>
       </div>
 
       <div className="bg-surface rounded-[2.5rem] border border-border shadow-2xl p-8 sm:p-12">
@@ -187,11 +236,12 @@ export default function CreateProperty() {
             {/* Map Picker */}
             <div className="md:col-span-2">
                <label className="block text-xs font-black text-taupe uppercase tracking-widest mb-2 ml-1">Pin Exact Location on Map</label>
-             <div className="w-full h-64 bg-background rounded-3xl overflow-hidden relative border-4 border-border">
+               <div className="w-full h-64 bg-background rounded-3xl overflow-hidden relative border-4 border-border">
                   <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
                     <GoogleMap
+                       key={`${formData.lat}-${formData.lng}`}
                        defaultZoom={13}
-                       defaultCenter={{ lat: 18.5204, lng: 73.8567 }}
+                       defaultCenter={{ lat: formData.lat, lng: formData.lng }}
                        mapId="PROPERTY_PICKER_MAP"
                        onClick={handleMapClick}
                        gestureHandling={'greedy'}
@@ -225,19 +275,27 @@ export default function CreateProperty() {
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {/* Image previews */}
               {images.map((url, index) => (
                 <div key={index} className="relative aspect-video rounded-2xl overflow-hidden border border-border group bg-background flex items-center justify-center">
-                  <img src={url} alt={`Listing upload ${index + 1}`} className="w-full h-full object-cover" />
-                  <button 
-                    type="button"
-                    onClick={() => removeImage(url)}
-                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg hover:bg-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {url ? (
+                    <>
+                      <img src={url} alt={`Listing upload ${index + 1}`} className="w-full h-full object-cover" />
+                      <button 
+                        type="button"
+                        onClick={() => removeImage(url)}
+                        className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg hover:bg-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs font-semibold text-taupe">Local Fallback Active</span>
+                  )}
                 </div>
               ))}
               
+              {/* Upload slot */}
               <label className="flex flex-col items-center justify-center aspect-video rounded-2xl border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer bg-background/30 group">
                 {uploading ? (
                   <>
@@ -285,9 +343,9 @@ export default function CreateProperty() {
                       {amenity.id}
                     </span>
                     {isSelected && (
-                       <div className="absolute top-2 right-2 w-5 h-5 bg-background rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-primary" />
-                       </div>
+                      <div className="absolute top-2 right-2 w-5 h-5 bg-background rounded-full flex items-center justify-center">
+                        <Check className="w-3 h-3 text-primary" />
+                      </div>
                     )}
                   </button>
                 );
@@ -306,16 +364,16 @@ export default function CreateProperty() {
             </button>
             <button 
               type="submit" 
-              disabled={loading}
+              disabled={saving || uploading}
               className="flex items-center gap-3 px-10 py-5 bg-primary text-background font-black rounded-3xl hover:bg-accent hover:text-background transition-all shadow-2xl shadow-primary/30 disabled:opacity-50 disabled:shadow-none hover:scale-105 active:scale-95 hover:shadow-accent/20"
             >
-              {loading ? (
+              {saving ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Publishing...
+                  <Loader2 className="w-5 h-5 animate-spin" /> Saving Changes...
                 </>
               ) : (
                 <>
-                  <Plus className="w-5 h-5" /> Publish Listing
+                  <Save className="w-5 h-5" /> Save Changes
                 </>
               )}
             </button>

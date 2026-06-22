@@ -8,6 +8,8 @@ export default function Properties() {
   const [monthlyStats, setMonthlyStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL'); // ALL, BOOKED, FREE
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -32,6 +34,31 @@ export default function Properties() {
       setLoading(false);
     }
   }
+
+  const handleDelete = async () => {
+    if (!deleteConfirmId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/rooms/${deleteConfirmId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchMyProperties();
+        setDeleteConfirmId(null);
+      } else {
+        alert(data.error || 'Failed to delete listing');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete property listing due to a network error.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const filteredProperties = properties.filter(p => {
     if (filter === 'ALL') return true;
@@ -227,10 +254,13 @@ export default function Properties() {
                         <Link to={`/room/${room.id}`} className="p-3 text-taupe hover:text-primary hover:bg-surface border border-transparent hover:border-border rounded-2xl transition-all shadow-sm">
                            <Eye className="w-5 h-5" />
                         </Link>
-                        <button className="p-3 text-taupe hover:text-accent hover:bg-surface border border-transparent hover:border-border rounded-2xl transition-all shadow-sm">
+                        <Link to={`/host/properties/edit/${room.id}`} className="p-3 text-taupe hover:text-accent hover:bg-surface border border-transparent hover:border-border rounded-2xl transition-all shadow-sm">
                            <Edit className="w-5 h-5" />
-                        </button>
-                        <button className="p-3 text-taupe hover:text-red-500 hover:bg-surface border border-transparent hover:border-red-500/20 rounded-2xl transition-all shadow-sm">
+                        </Link>
+                        <button 
+                           onClick={() => setDeleteConfirmId(room.id)}
+                           className="p-3 text-taupe hover:text-red-500 hover:bg-surface border border-transparent hover:border-red-500/20 rounded-2xl transition-all shadow-sm"
+                        >
                            <Trash2 className="w-5 h-5" />
                         </button>
                       </div>
@@ -252,6 +282,46 @@ export default function Properties() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-surface border border-border p-8 rounded-[2.5rem] max-w-md w-full mx-4 shadow-2xl space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-4">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-black text-primary">Delete Listing?</h3>
+              <p className="text-taupe text-sm font-semibold">
+                Are you sure you want to permanently delete this property? This action is irreversible and will remove all booking history.
+              </p>
+            </div>
+            
+            <div className="flex gap-4">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                disabled={deleting}
+                className="flex-1 py-4 bg-background border border-border hover:border-primary/20 text-primary font-bold rounded-2xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
