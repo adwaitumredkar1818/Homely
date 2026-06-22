@@ -19,6 +19,15 @@ model User {
   idProofUrl      String?
   studentIdUrl    String?
 
+  // Vibe Profile
+  college          String?
+  studyPreference  String?
+  socialPreference String?
+  cleanlinessLevel Int       @default(3)
+  isSmoking        Boolean   @default(false)
+  isVegetarian     Boolean   @default(false)
+  bio              String?
+
   // Relations
   rooms     Room[]    @relation("UserRooms")
   bookings  Booking[] @relation("UserBookings")
@@ -71,6 +80,9 @@ model Booking {
   totalPrice Float
   status     String    @default("PENDING") // PENDING, CONFIRMED, CANCELLED
   createdAt  DateTime  @default(now())
+
+  isGroup      Boolean @default(false)
+  groupMembers GroupMember[]
 
   // Relations
   roomId     Int
@@ -208,5 +220,22 @@ model Notification {
   message   String
   isRead    Boolean  @default(false)
   link      String?
+  createdAt DateTime @default(now())
+}
+
+model RoommateRequest {
+  id          Int      @id @default(autoincrement())
+  senderId    Int
+  receiverId  Int
+  status      String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  createdAt   DateTime @default(now())
+}
+
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  bookingId Int
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId    Int
+  status    String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
   createdAt DateTime @default(now())
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Menu, User, LogOut, LayoutDashboard, Moon, Sun, MessageSquare, Bell } from 'lucide-react';
+import { Search, Menu, User, LogOut, LayoutDashboard, Moon, Sun, MessageSquare, Bell, Users } from 'lucide-react';
 import CreatePropertyModal from '../CreatePropertyModal';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -142,12 +142,20 @@ export default function Navbar() {
                 List property
               </button>
             ) : (
-              <Link 
-                to="/hub"
-                className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
-              >
-                Hub
-              </Link>
+              <>
+                <Link 
+                  to="/roommates"
+                  className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
+                >
+                  Roommates
+                </Link>
+                <Link 
+                  to="/hub"
+                  className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
+                >
+                  Hub
+                </Link>
+              </>
             )}
 
             {/* Notifications Bell */}
@@ -255,11 +263,18 @@ export default function Navbar() {
                         <LayoutDashboard className="w-4 h-4" /> Dashboard
                       </Link>
                       <Link 
+                        to="/roommates" 
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
+                      >
+                        <Users className="w-4 h-4 text-taupe" /> Roommates
+                      </Link>
+                      <Link 
                         to="/hub" 
                         onClick={() => setShowDropdown(false)}
                         className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
                       >
-                        <SlidersHorizontal className="w-4 h-4" /> Community Hub
+                        <LayoutDashboard className="w-4 h-4" /> Community Hub
                       </Link>
                       <Link 
                         to="/inbox" 
