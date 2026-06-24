@@ -67,7 +67,7 @@ export default function RoomDetail() {
     </div>
   );
 
-  const handleBooking = async () => {
+  const handleBooking = async (roommateEmails) => {
     if (!user) {
       navigate('/auth', { state: { from: location.pathname } });
       return;
@@ -80,13 +80,13 @@ export default function RoomDetail() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ roomId: room.id, price: room.price })
+        body: JSON.stringify({ roomId: room.id, price: room.price, roommateEmails })
       });
       const data = await res.json();
       if (data.success) {
         setIsBooked(true);
       } else {
-        alert(data.error || 'Failed to book meeting.');
+        alert(data.error || 'Failed to book room.');
       }
     } catch (err) {
       console.error(err);

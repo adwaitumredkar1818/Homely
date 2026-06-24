@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { CreditCard, ShieldCheck, Loader2, X } from 'lucide-react';
+import { CreditCard, ShieldCheck, Loader2, X, Users } from 'lucide-react';
 
 export default function CheckoutModal({ isOpen, onClose, amount, itemTitle, onConfirm }) {
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvv, setCvv] = useState('');
   const [name, setName] = useState('');
+  const [isShared, setIsShared] = useState(false);
+  const [emails, setEmails] = useState('');
   const [processing, setProcessing] = useState(false);
   const [step, setStep] = useState('input'); // 'input', 'processing', 'success'
 
@@ -18,10 +20,14 @@ export default function CheckoutModal({ isOpen, onClose, amount, itemTitle, onCo
     setStep('processing');
     setProcessing(true);
 
+    const roommateEmails = isShared 
+      ? emails.split(',').map(em => em.trim()).filter(Boolean)
+      : [];
+
     setTimeout(() => {
       setProcessing(false);
       setStep('success');
-      onConfirm();
+      onConfirm(roommateEmails);
     }, 2500);
   };
 
@@ -108,6 +114,35 @@ export default function CheckoutModal({ isOpen, onClose, amount, itemTitle, onCo
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Shared Booking Toggle */}
+            <div className="pt-4 border-t border-white/5 space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input 
+                  type="checkbox"
+                  checked={isShared}
+                  onChange={(e) => setIsShared(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/10 bg-background text-accent focus:ring-accent"
+                />
+                <span className="text-xs font-black uppercase text-primary tracking-wider flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-accent" /> Shared Group Booking
+                </span>
+              </label>
+
+              {isShared && (
+                <div className="space-y-1 animate-in slide-in-from-top-2 duration-200">
+                  <label className="block text-[10px] font-black uppercase text-taupe tracking-wider">Roommate Emails (comma separated)</label>
+                  <input 
+                    type="text"
+                    placeholder="email1@college.edu, email2@college.edu"
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent/50 text-xs font-semibold"
+                    value={emails}
+                    onChange={(e) => setEmails(e.target.value)}
+                  />
+                  <p className="text-[9px] text-taupe font-medium">Roommates will receive an invite. Booking confirms once everyone accepts.</p>
+                </div>
+              )}
             </div>
 
             <button

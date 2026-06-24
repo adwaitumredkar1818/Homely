@@ -3,7 +3,7 @@ import { Wallet, BedDouble, CalendarCheck, TrendingUp, Loader2, Utensils, Wrench
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, AreaChart, Area, Line, Legend } from 'recharts';
 
 export default function Dashboard() {
   const { token } = useAuth();
@@ -23,6 +23,11 @@ export default function Dashboard() {
         });
         const maintData = await maintRes.json();
         
+        const forecastRes = await fetch('http://localhost:5000/api/analytics/forecast', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const forecastData = await forecastRes.json();
+        
         // Calculate stats
         const activeListings = (profileData.myListings?.length || 0) + (profileData.myMesses?.length || 0);
         const upcomingBookings = profileData.inboundBookings?.filter(b => b.status === 'PENDING').length || 0;
@@ -40,7 +45,8 @@ export default function Dashboard() {
           recentReservations: profileData.inboundBookings?.slice(0, 5) || [],
           monthlyStats: profileData.monthlyStats || [],
           activeMaintenance,
-          upcomingBookings
+          upcomingBookings,
+          forecast: forecastData.forecast || []
         });
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
@@ -243,6 +249,93 @@ export default function Dashboard() {
           </div>
         </div>
 
+      </div>
+
+      {/* Occupancy & pricing forecast section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch mt-8">
+        {/* Occupancy area chart */}
+        <div className="lg:col-span-2 bg-surface p-8 sm:p-10 rounded-[3rem] border border-white/10 shadow-2xl flex flex-col justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-primary mb-1">Occupancy Forecast</h2>
+            <p className="text-taupe text-sm font-bold">Predicted vs Actual monthly occupancy rates (%).</p>
+          </div>
+
+          <div className="h-64 pt-8">
+            {data?.forecast && (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data.forecast} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#CCFF00" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#CCFF00" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: 'var(--color-taupe, #9a8a78)', fontSize: 10, fontWeight: 'bold' }} 
+                  />
+                  <YAxis 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: 'var(--color-taupe, #9a8a78)', fontSize: 10, fontWeight: 'bold' }} 
+                    domain={[0, 100]}
+                    tickFormatter={(val) => `${val}%`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'var(--color-surface, #201b19)', 
+                      borderColor: 'rgba(255,255,255,0.1)', 
+                      borderRadius: '16px',
+                      color: 'var(--color-primary, #eae6df)',
+                      fontWeight: 'bold',
+                      fontSize: '12px'
+                    }}
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 900, paddingTop: '10px' }} />
+                  <Area name="Predicted Occupancy" type="monotone" dataKey="predictedOccupancy" stroke="#8b5cf6" fillOpacity={1} fill="url(#colorPredicted)" strokeWidth={2} />
+                  <Area name="Actual Occupancy" type="monotone" dataKey="actualOccupancy" stroke="#CCFF00" fillOpacity={1} fill="url(#colorActual)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Pricing Suggestions */}
+        <div className="bg-surface rounded-[2.5rem] border border-white/10 p-8 shadow-2xl flex flex-col justify-between">
+          <div>
+            <h3 className="text-xl font-black text-primary mb-1">Smart Yield Engine</h3>
+            <p className="text-taupe text-xs font-bold mb-6">Optimized rate suggestions based on seasonal demand.</p>
+            
+            <div className="space-y-4 max-h-[220px] overflow-y-auto custom-scrollbar">
+              {data?.forecast?.map((item) => (
+                <div key={item.month} className="flex items-center justify-between p-3.5 bg-background/40 rounded-2xl border border-white/5">
+                  <div>
+                    <p className="font-bold text-primary text-xs">{item.month} Recommendations</p>
+                    <p className="text-[10px] text-taupe font-bold mt-0.5">Demand Level: <span className={item.demandLevel === 'HIGH' ? 'text-accent' : 'text-primary'}>{item.demandLevel}</span></p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-primary text-xs">₹{item.recommendedPrice?.toLocaleString()}</p>
+                    <span className="text-[9px] text-taupe font-bold uppercase tracking-wider block mt-0.5">Suggested Rate</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-white/5">
+            <button className="w-full py-4 bg-primary hover:bg-accent text-background font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all shadow-lg">
+              Apply Dynamic Rates
+            </button>
+          </div>
+        </div>
       </div>
 
     </div>
