@@ -11,7 +11,10 @@ function rateLimiter({ windowMs = 15 * 60 * 1000, max = 100, message = 'Too many
 
     const requests = ipRequestCounts.get(ip).filter(timestamp => now - timestamp < windowMs);
     
-    if (requests.length >= max) {
+    const isDev = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+    const effectiveMax = isDev ? 10000 : max;
+
+    if (requests.length >= effectiveMax) {
       return res.status(429).json({ error: message });
     }
 

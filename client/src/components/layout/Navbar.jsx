@@ -143,12 +143,7 @@ export default function Navbar() {
               </button>
             ) : (
               <>
-                <Link 
-                  to="/roommates"
-                  className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
-                >
-                  Roommates
-                </Link>
+
                 <Link 
                   to="/hub"
                   className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
@@ -262,13 +257,7 @@ export default function Navbar() {
                       >
                         <LayoutDashboard className="w-4 h-4" /> Dashboard
                       </Link>
-                      <Link 
-                        to="/roommates" 
-                        onClick={() => setShowDropdown(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
-                      >
-                        <Users className="w-4 h-4 text-taupe" /> Roommates
-                      </Link>
+
                       <Link 
                         to="/hub" 
                         onClick={() => setShowDropdown(false)}

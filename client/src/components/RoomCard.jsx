@@ -39,7 +39,13 @@ export default function RoomCard({ room }) {
           </div>
           <h3 className="text-xl font-bold text-primary mb-3 line-clamp-1 group-hover:text-accent transition-colors duration-300">{room.title}</h3>
           <div className="flex flex-wrap gap-2 mb-4">
-            {room.amenities.map(amenity => (
+            {(Array.isArray(room.amenities)
+              ? room.amenities
+              : (typeof room.amenities === 'string'
+                  ? (() => { try { return JSON.parse(room.amenities); } catch { return []; } })()
+                  : []
+                )
+            ).map(amenity => (
                <span key={amenity} className="text-xs px-2.5 py-1 bg-taupe-light/20 text-primary-light font-medium rounded-md">
                  {amenity}
                </span>

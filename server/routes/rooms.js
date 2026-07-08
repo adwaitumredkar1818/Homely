@@ -351,6 +351,7 @@ router.get('/:id/recommendations', async (req, res) => {
           lat: r.lat,
           lng: r.lng,
           image: r.images?.[0]?.url || null,
+          amenities: r.amenities,
           rating: parseFloat(rating.toFixed(1)),
           reviews: reviews,
           distance,

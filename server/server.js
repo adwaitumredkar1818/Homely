@@ -122,7 +122,7 @@ const wishlistRouter = require('./routes/wishlist');
 const maintenanceRouter = require('./routes/maintenance');
 const notificationsRouter = require('./routes/notifications');
 const userRouter = require('./routes/user');
-const roommatesRouter = require('./routes/roommates');
+
 const analyticsRouter = require('./routes/analytics');
 
 app.use('/api/auth', authRouter);
@@ -134,7 +134,7 @@ app.use('/api/wishlist', wishlistRouter);
 app.use('/api/maintenance', maintenanceRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/user', userRouter);
-app.use('/api/roommates', roommatesRouter);
+
 app.use('/api/analytics', analyticsRouter);
 
 // Base route

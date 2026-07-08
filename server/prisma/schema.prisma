@@ -223,13 +223,7 @@ model Notification {
   createdAt DateTime @default(now())
 }
 
-model RoommateRequest {
-  id          Int      @id @default(autoincrement())
-  senderId    Int
-  receiverId  Int
-  status      String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
-  createdAt   DateTime @default(now())
-}
+
 
 model GroupMember {
   id        Int      @id @default(autoincrement())
