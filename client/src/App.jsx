@@ -15,9 +15,9 @@ import Maintenance from './pages/host/Maintenance';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import EditProperty from './pages/host/EditProperty';
 import Messes from './pages/host/Messes';
-import Hub from './pages/Hub';
 import Verification from './pages/Verification';
 import ForgotPassword from './pages/ForgotPassword';
+import Roommates from './pages/Roommates';
 
 
 function PublicLayout() {
@@ -47,8 +47,8 @@ function App() {
           <Route path="/mess/:id" element={<MessDetail />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/inbox" element={<Inbox />} />
-          <Route path="/hub" element={<Hub />} />
           <Route path="/verification" element={<Verification />} />
+          <Route path="/roommates" element={<Roommates />} />
 
         </Route>
 

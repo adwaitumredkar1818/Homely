@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Mail, Shield, Calendar, MapPin, Star, Settings, ChevronRight, LogOut, Loader2, Building2, Utensils, LayoutDashboard, PlusCircle, MessageSquare, Heart, Wrench, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { User, Mail, Shield, Calendar, MapPin, Star, Settings, ChevronRight, LogOut, Loader2, Building2, Utensils, LayoutDashboard, PlusCircle, MessageSquare, Heart, Wrench, AlertCircle, CheckCircle2, Clock, Sparkles, BookOpen, Users, Cigarette, Leaf } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -12,6 +12,34 @@ export default function Profile() {
   const [tickets, setTickets] = useState([]);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('bookings');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [personalForm, setPersonalForm] = useState({
+    name: '',
+    bio: '',
+    college: '',
+    studyPreference: '',
+    socialPreference: '',
+    cleanlinessLevel: 3,
+    isSmoking: false,
+    isVegetarian: false
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const [securityForm, setSecurityForm] = useState({
+    profileVisibility: 'PUBLIC',
+    emailAlerts: true,
+    pushNotifications: true
+  });
 
   const isHost = user?.role === 'HOST';
 
@@ -51,9 +79,160 @@ export default function Profile() {
     fetchProfile();
   }, [token, navigate]);
 
+  useEffect(() => {
+    if (profileData?.user) {
+      setPersonalForm({
+        name: profileData.user.name || '',
+        bio: profileData.user.bio || '',
+        college: profileData.user.college || '',
+        studyPreference: profileData.user.studyPreference || '',
+        socialPreference: profileData.user.socialPreference || '',
+        cleanlinessLevel: profileData.user.cleanlinessLevel || 3,
+        isSmoking: profileData.user.isSmoking || false,
+        isVegetarian: profileData.user.isVegetarian || false
+      });
+    }
+  }, [profileData]);
+
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleLeaveRoom = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to leave this room and cancel your booking?')) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/bookings/${bookingId}/leave`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Refresh profile data
+        const profileRes = await fetch('http://localhost:5000/api/user/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (profileRes.ok) {
+          const freshData = await profileRes.json();
+          setProfileData(freshData);
+        }
+      } else {
+        alert(data.error || 'Failed to leave room');
+      }
+    } catch (err) {
+      alert('Network error. Failed to leave room.');
+    }
+  };
+
+  const handleLeaveMess = async (subId) => {
+    if (!window.confirm('Are you sure you want to cancel your tiffin subscription to this mess?')) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/messes/subscriptions/${subId}/leave`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Refresh profile data
+        const profileRes = await fetch('http://localhost:5000/api/user/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (profileRes.ok) {
+          const freshData = await profileRes.json();
+          setProfileData(freshData);
+        }
+      } else {
+        alert(data.error || 'Failed to cancel subscription');
+      }
+    } catch (err) {
+      alert('Network error. Failed to cancel subscription.');
+    }
+  };
+
+  useEffect(() => {
+    const savedSecurity = localStorage.getItem('securitySettings');
+    if (savedSecurity) {
+      setSecurityForm(JSON.parse(savedSecurity));
+    }
+  }, []);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+    try {
+      const res = await fetch('http://localhost:5000/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(personalForm)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMessage('Profile updated successfully!');
+        setProfileData(prev => ({
+          ...prev,
+          user: {
+            ...prev.user,
+            ...data.user
+          }
+        }));
+      } else {
+        setErrorMessage(data.error || 'Failed to update profile');
+      }
+    } catch (err) {
+      setErrorMessage('Network error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setErrorMessage('New passwords do not match');
+      return;
+    }
+    setIsSubmitting(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+    try {
+      const res = await fetch('http://localhost:5000/api/user/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMessage('Password changed successfully!');
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        setErrorMessage(data.error || 'Failed to change password');
+      }
+    } catch (err) {
+      setErrorMessage('Network error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateSecurity = (e) => {
+    e.preventDefault();
+    setSuccessMessage('Security and privacy settings updated!');
+    localStorage.setItem('securitySettings', JSON.stringify(securityForm));
   };
 
   if (isLoading) {
@@ -183,294 +362,657 @@ export default function Profile() {
 
             {/* Menu */}
             <div className="bg-surface rounded-3xl overflow-hidden shadow-lg border border-white/10">
-              <button className="w-full flex items-center justify-between px-6 py-4 text-primary hover:bg-accent/5 transition-colors font-bold text-left border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-taupe" /> Personal Info
-                </div>
-                <ChevronRight className="w-4 h-4 text-taupe" />
-              </button>
               <button 
-                onClick={() => navigate('/inbox')}
-                className="w-full flex items-center justify-between px-6 py-4 text-primary hover:bg-accent/5 transition-colors font-bold text-left border-b border-white/5"
+                onClick={() => { setActiveTab('bookings'); setSuccessMessage(''); setErrorMessage(''); }}
+                className={`w-full flex items-center justify-between px-6 py-4 transition-colors font-bold text-left border-b border-white/5 ${activeTab === 'bookings' ? 'bg-primary text-background' : 'text-primary hover:bg-accent/5'}`}
               >
                 <div className="flex items-center gap-3">
-                  <MessageSquare className="w-5 h-5 text-taupe" /> Inbox
+                  <LayoutDashboard className={`w-5 h-5 ${activeTab === 'bookings' ? 'text-background' : 'text-taupe'}`} /> {isHost ? 'Landlord Listings' : 'My Bookings'}
                 </div>
-                <ChevronRight className="w-4 h-4 text-taupe" />
+                <ChevronRight className={`w-4 h-4 ${activeTab === 'bookings' ? 'text-background' : 'text-taupe'}`} />
               </button>
-              <button className="w-full flex items-center justify-between px-6 py-4 text-primary hover:bg-accent/5 transition-colors font-bold text-left border-b border-white/5">
+              <button 
+                onClick={() => { setActiveTab('personal'); setSuccessMessage(''); setErrorMessage(''); }}
+                className={`w-full flex items-center justify-between px-6 py-4 transition-colors font-bold text-left border-b border-white/5 ${activeTab === 'personal' ? 'bg-primary text-background' : 'text-primary hover:bg-accent/5'}`}
+              >
                 <div className="flex items-center gap-3">
-                  <Settings className="w-5 h-5 text-taupe" /> Account Settings
+                  <User className={`w-5 h-5 ${activeTab === 'personal' ? 'text-background' : 'text-taupe'}`} /> Personal Info
                 </div>
-                <ChevronRight className="w-4 h-4 text-taupe" />
+                <ChevronRight className={`w-4 h-4 ${activeTab === 'personal' ? 'text-background' : 'text-taupe'}`} />
               </button>
-              <button className="w-full flex items-center justify-between px-6 py-4 text-primary hover:bg-accent/5 transition-colors font-bold text-left">
+              <button 
+                onClick={() => { setActiveTab('account'); setSuccessMessage(''); setErrorMessage(''); }}
+                className={`w-full flex items-center justify-between px-6 py-4 transition-colors font-bold text-left border-b border-white/5 ${activeTab === 'account' ? 'bg-primary text-background' : 'text-primary hover:bg-accent/5'}`}
+              >
                 <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-taupe" /> Security & Privacy
+                  <Settings className={`w-5 h-5 ${activeTab === 'account' ? 'text-background' : 'text-taupe'}`} /> Account Settings
                 </div>
-                <ChevronRight className="w-4 h-4 text-taupe" />
+                <ChevronRight className={`w-4 h-4 ${activeTab === 'account' ? 'text-background' : 'text-taupe'}`} />
+              </button>
+              <button 
+                onClick={() => { setActiveTab('security'); setSuccessMessage(''); setErrorMessage(''); }}
+                className={`w-full flex items-center justify-between px-6 py-4 transition-colors font-bold text-left ${activeTab === 'security' ? 'bg-primary text-background' : 'text-primary hover:bg-accent/5'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Shield className={`w-5 h-5 ${activeTab === 'security' ? 'text-background' : 'text-taupe'}`} /> Security & Privacy
+                </div>
+                <ChevronRight className={`w-4 h-4 ${activeTab === 'security' ? 'text-background' : 'text-taupe'}`} />
               </button>
             </div>
           </div>
-
           {/* Right Column: Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            <div className="bg-surface rounded-3xl p-8 shadow-lg border border-white/10">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold text-primary">
-                  {isHost ? 'Manage My Properties' : 'My Current Bookings'}
-                </h3>
-                <button 
-                  onClick={() => navigate(isHost ? '/host/properties' : '/profile')}
-                  className="text-accent font-bold text-sm hover:underline"
-                >
-                  {isHost ? 'View All Listings' : 'View History'}
-                </button>
+            {successMessage && (
+              <div className="bg-green-500/10 text-green-500 p-6 rounded-3xl border border-green-500/20 shadow-lg animate-in fade-in">
+                {successMessage}
               </div>
+            )}
+            {errorMessage && (
+              <div className="bg-red-500/10 text-red-500 p-6 rounded-3xl border border-red-500/20 shadow-lg animate-in fade-in">
+                {errorMessage}
+              </div>
+            )}
 
-              {/* HOST VIEW: Show Listings & Messes */}
-              {isHost && (
-                <div className="space-y-8">
-                  {/* Property Listings */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-black text-taupe uppercase tracking-widest px-1">My Property Listings</h4>
-                    {profileData?.myListings?.length > 0 ? (
-                      profileData.myListings.map((listing) => (
-                        <div 
-                          key={listing.id}
-                          className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
-                        >
-                          <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
-                             <img src={listing.images?.[0]?.url || `/assets/rooms/student_room_${(listing.id % 15) + 1}.png`} className="w-full h-full object-cover" alt="" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start mb-2">
-                              <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{listing.title}</h4>
-                              <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">{listing.isBooked ? 'OCCUPIED' : 'ACTIVE'}</span>
+            {activeTab === 'bookings' && (
+              <div className="bg-surface rounded-3xl p-8 shadow-lg border border-white/10">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-bold text-primary">
+                    {isHost ? 'Manage My Properties' : 'My Current Bookings'}
+                  </h3>
+                  <button 
+                    onClick={() => navigate(isHost ? '/host/properties' : '/profile')}
+                    className="text-accent font-bold text-sm hover:underline"
+                  >
+                    {isHost ? 'View All Listings' : 'View History'}
+                  </button>
+                </div>
+
+                {/* HOST VIEW: Show Listings & Messes */}
+                {isHost && (
+                  <div className="space-y-8">
+                    {/* Property Listings */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-taupe uppercase tracking-widest px-1">My Property Listings</h4>
+                      {profileData?.myListings?.length > 0 ? (
+                        profileData.myListings.map((listing) => (
+                          <div 
+                            key={listing.id}
+                            className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
+                          >
+                            <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
+                               <img src={listing.images?.[0]?.url || `/assets/rooms/student_room_${(listing.id % 15) + 1}.png`} className="w-full h-full object-cover" alt="" />
                             </div>
-                            <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
-                              <MapPin className="w-3.5 h-3.5" /> {listing.location}
-                            </p>
-                            <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                               <div className="text-lg font-bold text-primary">₹{listing.price?.toLocaleString()}</div>
-                               <button 
-                                 onClick={() => navigate('/host/properties')}
-                                 className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
-                               >
-                                 Manage Listing
-                               </button>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{listing.title}</h4>
+                                <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">{listing.isBooked ? 'OCCUPIED' : 'ACTIVE'}</span>
+                              </div>
+                              <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
+                                <MapPin className="w-3.5 h-3.5" /> {listing.location}
+                              </p>
+                              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                 <div className="text-lg font-bold text-primary">₹{listing.price?.toLocaleString()}</div>
+                                 <button 
+                                   onClick={() => navigate('/host/properties')}
+                                   className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
+                                 >
+                                   Manage Listing
+                                 </button>
+                              </div>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-10 px-4 bg-background rounded-3xl border border-dashed border-white/10">
+                          <p className="text-taupe font-bold text-sm">No properties listed yet.</p>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-10 px-4 bg-background rounded-3xl border border-dashed border-white/10">
-                        <p className="text-taupe font-bold text-sm">No properties listed yet.</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* Mess Listings */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-taupe uppercase tracking-widest px-1">My Mess Listings</h4>
+                      {profileData?.myMesses?.length > 0 ? (
+                        profileData.myMesses.map((mess) => (
+                          <div 
+                            key={mess.id}
+                            className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
+                          >
+                            <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
+                               <img src={mess.images?.[0]?.url || `/assets/messes/mess_${(mess.id % 5) + 1}.png`} className="w-full h-full object-cover" alt="" />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{mess.name}</h4>
+                                <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">ACTIVE</span>
+                              </div>
+                              <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
+                                <MapPin className="w-3.5 h-3.5" /> {mess.location}
+                              </p>
+                              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                 <div className="text-lg font-bold text-primary">₹{mess.price?.toLocaleString()}</div>
+                                 <button 
+                                   onClick={() => navigate('/home')}
+                                   className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
+                                 >
+                                   View Public Page
+                                 </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-10 px-4 bg-background rounded-3xl border border-dashed border-white/10">
+                          <p className="text-taupe font-bold text-sm">No messes listed yet.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
+                )}
 
-                  {/* Mess Listings */}
+                {/* SHARED/TENANT VIEW: Show Bookings (Show for both roles now) */}
+                <div className={`space-y-4 ${isHost ? 'mt-12 pt-12 border-t border-white/10' : ''}`}>
+                  {isHost && <h3 className="text-2xl font-bold text-primary mb-8">My Personal Bookings</h3>}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-black text-taupe uppercase tracking-widest px-1">My Mess Listings</h4>
-                    {profileData?.myMesses?.length > 0 ? (
-                      profileData.myMesses.map((mess) => (
+                    {profileData?.myBookings?.length > 0 ? (
+                      profileData.myBookings.map((booking) => (
                         <div 
-                          key={mess.id}
+                          key={booking.id}
                           className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
                         >
-                          <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden">
-                             <img src={mess.images?.[0]?.url || `/assets/messes/mess_${(mess.id % 5) + 1}.png`} className="w-full h-full object-cover" alt="" />
+                          <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden relative">
+                             {booking.room?.images?.[0] ? (
+                                <img src={booking.room.images[0].url} className="w-full h-full object-cover" alt="" />
+                             ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                   {booking.type === 'ROOM' ? <Building2 className="w-8 h-8 text-taupe" /> : <Utensils className="w-8 h-8 text-taupe" />}
+                                </div>
+                             )}
                           </div>
                           <div className="flex-1">
                             <div className="flex justify-between items-start mb-2">
-                              <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{mess.name}</h4>
-                              <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">ACTIVE</span>
+                              <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{booking.room?.title || booking.room?.name}</h4>
+                              <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">{booking.status}</span>
                             </div>
                             <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
-                              <MapPin className="w-3.5 h-3.5" /> {mess.location}
+                              <MapPin className="w-3.5 h-3.5" /> {booking.room?.location}
                             </p>
                             <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                               <div className="text-lg font-bold text-primary">₹{mess.price?.toLocaleString()}</div>
-                               <button 
-                                 onClick={() => navigate('/home')}
-                                 className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
-                               >
-                                 View Public Page
-                               </button>
+                               <div className="text-lg font-bold text-primary">₹{booking.totalPrice?.toLocaleString()}</div>
+                               <div className="flex gap-2">
+                                 {booking.type === 'ROOM' && booking.status === 'CONFIRMED' && (
+                                   <>
+                                   <button 
+                                     onClick={() => { setSelectedRoomId(booking.roomId); setIsReportModalOpen(true); }}
+                                     className="text-xs font-bold bg-red-500/10 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1"
+                                   >
+                                     <AlertCircle className="w-3 h-3" /> Report Issue
+                                   </button>
+                                   <button 
+                                     onClick={() => navigate('/roommates')}
+                                     className="text-xs font-bold bg-accent/15 text-accent px-4 py-2 rounded-xl hover:bg-accent hover:text-background transition-colors flex items-center gap-1"
+                                   >
+                                     <Users className="w-3 h-3" /> Find Roommate
+                                   </button>
+                                   </>
+                                 )}
+                                 {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
+                                   booking.type === 'ROOM' ? (
+                                     <button 
+                                       onClick={() => handleLeaveRoom(booking.id)}
+                                       className="text-xs font-bold bg-red-500/10 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-colors"
+                                     >
+                                       Leave Room
+                                     </button>
+                                   ) : (
+                                     <button 
+                                       onClick={() => handleLeaveMess(booking.id)}
+                                       className="text-xs font-bold bg-red-500/10 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-colors"
+                                     >
+                                       Cancel Subscription
+                                     </button>
+                                   )
+                                 )}
+                                 <button 
+                                   onClick={() => navigate(booking.type === 'ROOM' ? `/room/${booking.roomId}` : `/mess/${booking.roomId}`)}
+                                   className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
+                                 >
+                                   View Details
+                                 </button>
+                               </div>
                             </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-10 px-4 bg-background rounded-3xl border border-dashed border-white/10">
-                        <p className="text-taupe font-bold text-sm">No messes listed yet.</p>
+                      <div className="text-center py-16 px-4 bg-background rounded-3xl border border-dashed border-white/10">
+                        <div className="w-20 h-20 bg-accent/5 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Calendar className="w-10 h-10 text-accent/30" />
+                        </div>
+                        <h4 className="text-xl font-bold text-primary mb-2">No Active Bookings</h4>
+                        <p className="text-taupe mb-8 max-w-xs mx-auto font-medium">You haven't booked any hostels or mess services yet. Start exploring now!</p>
+                        <button 
+                          onClick={() => navigate('/home')}
+                          className="px-8 py-3 bg-accent text-background rounded-2xl font-bold shadow-lg shadow-accent/20 hover:scale-105 transition-transform"
+                        >
+                          Browse Hostels
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
-              )}
 
-              {/* SHARED/TENANT VIEW: Show Bookings (Show for both roles now) */}
-              <div className={`space-y-4 ${isHost ? 'mt-12 pt-12 border-t border-white/10' : ''}`}>
-                {isHost && <h3 className="text-2xl font-bold text-primary mb-8">My Personal Bookings</h3>}
-                <div className="space-y-4">
-                  {profileData?.myBookings?.length > 0 ? (
-                    profileData.myBookings.map((booking) => (
-                      <div 
-                        key={booking.id}
-                        className="group flex flex-col sm:flex-row gap-6 p-6 bg-background rounded-[2rem] border border-white/5 hover:border-accent/30 transition-all hover:shadow-xl"
-                      >
-                        <div className="w-full sm:w-32 h-32 rounded-2xl bg-primary/10 overflow-hidden relative">
-                           {booking.room?.images?.[0] ? (
-                              <img src={booking.room.images[0].url} className="w-full h-full object-cover" alt="" />
-                           ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                 {booking.type === 'ROOM' ? <Building2 className="w-8 h-8 text-taupe" /> : <Utensils className="w-8 h-8 text-taupe" />}
-                              </div>
-                           )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="text-xl font-bold text-primary group-hover:text-accent transition-colors">{booking.room?.title || booking.room?.name}</h4>
-                            <span className="px-3 py-1 bg-green-500/10 text-green-500 rounded-lg text-[10px] font-black uppercase">{booking.status}</span>
-                          </div>
-                          <p className="text-sm text-taupe mb-4 flex items-center gap-1.5 font-medium">
-                            <MapPin className="w-3.5 h-3.5" /> {booking.room?.location}
-                          </p>
-                          <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                             <div className="text-lg font-bold text-primary">₹{booking.totalPrice?.toLocaleString()}</div>
-                             <div className="flex gap-2">
-                               {booking.type === 'ROOM' && booking.status === 'CONFIRMED' && (
-                                 <button 
-                                   onClick={() => { setSelectedRoomId(booking.roomId); setIsReportModalOpen(true); }}
-                                   className="text-xs font-bold bg-red-500/10 text-red-500 px-4 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-colors flex items-center gap-1"
-                                 >
-                                   <AlertCircle className="w-3 h-3" /> Report Issue
-                                 </button>
-                               )}
-                               <button 
-                                 onClick={() => navigate(booking.type === 'ROOM' ? `/room/${booking.roomId}` : `/mess/${booking.roomId}`)}
-                                 className="text-xs font-bold bg-primary text-background px-4 py-2 rounded-xl hover:bg-accent transition-colors"
-                               >
-                                 View Details
-                               </button>
+                {/* Maintenance Requests Section */}
+                <div className="mt-12 pt-12 border-t border-white/10">
+                   <h3 className="text-2xl font-bold text-primary mb-8 flex items-center gap-2">
+                     <Wrench className="w-6 h-6 text-accent" /> My Maintenance Requests
+                   </h3>
+                   {tickets.length > 0 ? (
+                     <div className="space-y-4">
+                       {tickets.map(ticket => (
+                         <div key={ticket.id} className="p-6 bg-background rounded-3xl border border-white/5">
+                           <div className="flex justify-between items-start mb-2">
+                             <h4 className="font-bold text-primary text-lg">{ticket.title}</h4>
+                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                               ticket.status === 'RESOLVED' ? 'bg-green-100 text-green-600' : 
+                               ticket.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
+                             }`}>
+                               {ticket.status}
+                             </span>
+                           </div>
+                           <p className="text-sm text-taupe mb-4">{ticket.description}</p>
+                           {ticket.hostResponse && (
+                             <div className="mt-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
+                               <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Landlord Response</p>
+                               <p className="text-sm text-taupe font-medium">{ticket.hostResponse}</p>
                              </div>
+                           )}
+                           <div className="mt-4 text-xs text-taupe font-bold flex justify-between">
+                             <span>{ticket.room?.title}</span>
+                             <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="text-center py-8 bg-background rounded-3xl border border-dashed border-white/10">
+                       <p className="text-taupe font-bold text-sm">You haven't reported any issues.</p>
+                     </div>
+                   )}
+                </div>
+
+                {/* Wishlist Section */}
+                <div className="mt-12 pt-12 border-t border-white/10">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-2xl font-bold text-primary">Saved for Later</h3>
+                      <div className="flex items-center gap-2 text-xs font-bold text-taupe uppercase tracking-widest">
+                        <Heart className="w-4 h-4 text-red-500 fill-current" /> {profileData?.wishlist?.length || 0} items
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      {profileData?.wishlist?.length > 0 ? (
+                        profileData.wishlist.map((item) => {
+                          const target = item.room || item.mess;
+                          const type = item.room ? 'room' : 'mess';
+                          return (
+                            <Link 
+                              key={item.id}
+                              to={type === 'room' ? `/room/${target.id}` : `/mess/${target.id}`}
+                              className="group bg-background rounded-[2rem] border border-white/5 overflow-hidden hover:border-accent/30 transition-all hover:shadow-2xl"
+                            >
+                              <div className="aspect-video relative overflow-hidden">
+                                 <img 
+                                   src={target.images?.[0]?.url || (type === 'room' ? `/assets/rooms/student_room_${(target.id % 15) + 1}.png` : `/assets/messes/mess_${(target.id % 5) + 1}.png`)} 
+                                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                   alt="" 
+                                 />
+                                 <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-md p-2 rounded-full text-red-500 shadow-lg">
+                                    <Heart className="w-4 h-4 fill-current" />
+                                 </div>
+                              </div>
+                              <div className="p-6">
+                                 <h4 className="text-lg font-bold text-primary mb-1 group-hover:text-accent transition-colors truncate">{target.title || target.name}</h4>
+                                 <p className="text-xs text-taupe mb-4 flex items-center gap-1 font-medium truncate">
+                                   <MapPin className="w-3 h-3" /> {target.location}
+                                 </p>
+                                 <div className="flex items-center justify-between">
+                                    <span className="text-primary font-bold">₹{target.price?.toLocaleString()}</span>
+                                    <span className="text-[10px] font-black uppercase text-taupe px-2 py-1 bg-surface rounded-lg">{type}</span>
+                                 </div>
+                              </div>
+                            </Link>
+                          );
+                        })
+                      ) : (
+                        <div className="sm:col-span-2 text-center py-12 bg-background rounded-3xl border border-dashed border-white/10">
+                          <p className="text-taupe font-bold text-sm">Your wishlist is empty. Start saving your favorite places!</p>
+                        </div>
+                      )}
+                    </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'personal' && (
+              <div className="bg-surface rounded-3xl p-8 sm:p-10 shadow-lg border border-white/10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/5">
+                  <div>
+                    <h3 className="text-2xl font-bold text-primary flex items-center gap-2">
+                      <User className="w-6 h-6 text-accent" /> Personal Information
+                    </h3>
+                    <p className="text-taupe text-sm mt-1">Update your roommate preferences and student verification details.</p>
+                  </div>
+                  <div className="px-4 py-2 bg-accent/10 border border-accent/25 rounded-full text-xs font-bold text-accent inline-flex items-center gap-1.5 self-start sm:self-center">
+                    <Sparkles className="w-3.5 h-3.5" /> Roommate Matching Active
+                  </div>
+                </div>
+                
+                <form onSubmit={handleUpdateProfile} className="space-y-8">
+                  {/* Basic Info Section */}
+                  <div className="space-y-6">
+                    <h4 className="text-xs font-bold text-accent uppercase tracking-widest">Basic Details</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-taupe uppercase tracking-widest">Full Name</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={personalForm.name}
+                          onChange={e => setPersonalForm({...personalForm, name: e.target.value})}
+                          className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-medium transition-all hover:bg-background/80"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-taupe uppercase tracking-widest">College / University</label>
+                        <input 
+                          type="text" 
+                          value={personalForm.college}
+                          onChange={e => setPersonalForm({...personalForm, college: e.target.value})}
+                          className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-medium transition-all hover:bg-background/80"
+                          placeholder="e.g. Pune University"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-taupe uppercase tracking-widest">Biography</label>
+                      <textarea 
+                        value={personalForm.bio}
+                        onChange={e => setPersonalForm({...personalForm, bio: e.target.value})}
+                        className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-medium min-h-[120px] transition-all hover:bg-background/80"
+                        placeholder="Share a bit about your daily routine, hobbies, and what you look for in roommates..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Roommate Matching Preferences */}
+                  <div className="space-y-6 pt-6 border-t border-white/5">
+                    <h4 className="text-xs font-bold text-accent uppercase tracking-widest">Roommate Matching Preferences</h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-taupe uppercase tracking-widest flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-taupe" /> Study Preference
+                        </label>
+                        <select 
+                          value={personalForm.studyPreference}
+                          onChange={e => setPersonalForm({...personalForm, studyPreference: e.target.value})}
+                          className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-bold transition-all hover:bg-background/80"
+                        >
+                          <option value="">Select Option</option>
+                          <option value="Quiet Study">Quiet Study - Likes silent focus</option>
+                          <option value="Group Study">Group Study - Enjoys learning with peers</option>
+                          <option value="Flexible">Flexible - Adapts easily</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold text-taupe uppercase tracking-widest flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-taupe" /> Social Vibe
+                        </label>
+                        <select 
+                          value={personalForm.socialPreference}
+                          onChange={e => setPersonalForm({...personalForm, socialPreference: e.target.value})}
+                          className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-bold transition-all hover:bg-background/80"
+                        >
+                          <option value="">Select Option</option>
+                          <option value="Introvert">Introvert - Prefers peace & personal space</option>
+                          <option value="Extrovert">Extrovert - Social butterfly, likes parties</option>
+                          <option value="Balanced">Balanced - Likes both social time & quiet time</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 p-6 bg-background/30 rounded-3xl border border-white/5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold text-taupe uppercase tracking-widest flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-accent" /> Cleanliness Index
+                        </label>
+                        <span className="px-3 py-1 bg-accent/15 text-accent rounded-full text-xs font-bold uppercase tracking-wider">
+                          {personalForm.cleanlinessLevel === 1 && 'Casual'}
+                          {personalForm.cleanlinessLevel === 2 && 'Moderate'}
+                          {personalForm.cleanlinessLevel === 3 && 'Average'}
+                          {personalForm.cleanlinessLevel === 4 && 'Clean'}
+                          {personalForm.cleanlinessLevel === 5 && 'Spick & Span'}
+                        </span>
+                      </div>
+                      <input 
+                        type="range" 
+                        min="1" 
+                        max="5" 
+                        value={personalForm.cleanlinessLevel}
+                        onChange={e => setPersonalForm({...personalForm, cleanlinessLevel: parseInt(e.target.value)})}
+                        className="w-full accent-accent bg-background h-2 rounded-lg cursor-pointer transition-all"
+                      />
+                      <div className="flex justify-between text-[10px] text-taupe font-black uppercase tracking-wider">
+                        <span>Level 1</span>
+                        <span>Level 3</span>
+                        <span>Level 5</span>
+                      </div>
+                    </div>
+
+                    {/* Styled Premium Toggle buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <button 
+                        type="button"
+                        onClick={() => setPersonalForm({...personalForm, isSmoking: !personalForm.isSmoking})}
+                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${personalForm.isSmoking ? 'bg-accent/5 border-accent/30 shadow-lg shadow-accent/5' : 'bg-background/40 border-white/10 hover:border-white/20'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-3 rounded-xl ${personalForm.isSmoking ? 'bg-accent/20 text-accent' : 'bg-white/5 text-taupe'}`}>
+                            <Cigarette className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className="block text-sm font-bold text-primary">Smoking Friendly</span>
+                            <span className="text-[10px] text-taupe font-medium">Allows smoking in personal room</span>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-16 px-4 bg-background rounded-3xl border border-dashed border-white/10">
-                      <div className="w-20 h-20 bg-accent/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Calendar className="w-10 h-10 text-accent/30" />
-                      </div>
-                      <h4 className="text-xl font-bold text-primary mb-2">No Active Bookings</h4>
-                      <p className="text-taupe mb-8 max-w-xs mx-auto font-medium">You haven't booked any hostels or mess services yet. Start exploring now!</p>
+                        <div className={`w-10 h-6 rounded-full transition-all relative flex items-center px-1 ${personalForm.isSmoking ? 'bg-accent' : 'bg-zinc-800'}`}>
+                          <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${personalForm.isSmoking ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                      </button>
+
                       <button 
-                        onClick={() => navigate('/home')}
-                        className="px-8 py-3 bg-accent text-background rounded-2xl font-bold shadow-lg shadow-accent/20 hover:scale-105 transition-transform"
+                        type="button"
+                        onClick={() => setPersonalForm({...personalForm, isVegetarian: !personalForm.isVegetarian})}
+                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${personalForm.isVegetarian ? 'bg-green-500/5 border-green-500/30 shadow-lg shadow-green-500/5' : 'bg-background/40 border-white/10 hover:border-white/20'}`}
                       >
-                        Browse Hostels
+                        <div className="flex items-center gap-3">
+                          <div className={`p-3 rounded-xl ${personalForm.isVegetarian ? 'bg-green-500/20 text-green-500' : 'bg-white/5 text-taupe'}`}>
+                            <Leaf className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <span className="block text-sm font-bold text-primary">Vegetarian Preference</span>
+                            <span className="text-[10px] text-taupe font-medium">Prefers veg roommates / meals</span>
+                          </div>
+                        </div>
+                        <div className={`w-10 h-6 rounded-full transition-all relative flex items-center px-1 ${personalForm.isVegetarian ? 'bg-green-500' : 'bg-zinc-800'}`}>
+                          <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${personalForm.isVegetarian ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
                       </button>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5 flex justify-end">
+                    <button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="px-8 py-4 bg-primary text-background hover:bg-accent font-bold rounded-2xl transition-all shadow-lg hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Save Profile Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {activeTab === 'account' && (
+              <div className="bg-surface rounded-3xl p-8 sm:p-10 shadow-lg border border-white/10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="pb-6 border-b border-white/5">
+                  <h3 className="text-2xl font-bold text-primary flex items-center gap-2">
+                    <Settings className="w-6 h-6 text-accent" /> Account Settings
+                  </h3>
+                  <p className="text-taupe text-sm mt-1">Manage password credentials and account access settings.</p>
                 </div>
-              </div>
 
-              {/* Maintenance Requests Section */}
-              <div className="mt-12 pt-12 border-t border-white/10">
-                 <h3 className="text-2xl font-bold text-primary mb-8 flex items-center gap-2">
-                   <Wrench className="w-6 h-6 text-accent" /> My Maintenance Requests
-                 </h3>
-                 {tickets.length > 0 ? (
-                   <div className="space-y-4">
-                     {tickets.map(ticket => (
-                       <div key={ticket.id} className="p-6 bg-background rounded-3xl border border-white/5">
-                         <div className="flex justify-between items-start mb-2">
-                           <h4 className="font-bold text-primary text-lg">{ticket.title}</h4>
-                           <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                             ticket.status === 'RESOLVED' ? 'bg-green-100 text-green-600' : 
-                             ticket.status === 'IN_PROGRESS' ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'
-                           }`}>
-                             {ticket.status}
-                           </span>
-                         </div>
-                         <p className="text-sm text-taupe mb-4">{ticket.description}</p>
-                         {ticket.hostResponse && (
-                           <div className="mt-4 p-4 bg-primary/5 rounded-xl border border-primary/10">
-                             <p className="text-xs font-black text-primary uppercase tracking-widest mb-1">Landlord Response</p>
-                             <p className="text-sm text-taupe font-medium">{ticket.hostResponse}</p>
-                           </div>
-                         )}
-                         <div className="mt-4 text-xs text-taupe font-bold flex justify-between">
-                           <span>{ticket.room?.title}</span>
-                           <span>{new Date(ticket.createdAt).toLocaleDateString()}</span>
-                         </div>
-                       </div>
-                     ))}
-                   </div>
-                 ) : (
-                   <div className="text-center py-8 bg-background rounded-3xl border border-dashed border-white/10">
-                     <p className="text-taupe font-bold text-sm">You haven't reported any issues.</p>
-                   </div>
-                 )}
-              </div>
+                <form onSubmit={handleUpdatePassword} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-taupe uppercase tracking-widest">Current Password</label>
+                    <input 
+                      type="password" 
+                      required 
+                      value={passwordForm.currentPassword}
+                      onChange={e => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                      className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-medium transition-all hover:bg-background/80"
+                      placeholder="••••••••"
+                    />
+                  </div>
 
-              {/* Wishlist Section */}
-              <div className="mt-12 pt-12 border-t border-white/10">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-2xl font-bold text-primary">Saved for Later</h3>
-                    <div className="flex items-center gap-2 text-xs font-bold text-taupe uppercase tracking-widest">
-                      <Heart className="w-4 h-4 text-red-500 fill-current" /> {profileData?.wishlist?.length || 0} items
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-taupe uppercase tracking-widest">New Password</label>
+                      <input 
+                        type="password" 
+                        required 
+                        value={passwordForm.newPassword}
+                        onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                        className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-medium transition-all hover:bg-background/80"
+                        placeholder="••••••••"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-taupe uppercase tracking-widest">Confirm New Password</label>
+                      <input 
+                        type="password" 
+                        required 
+                        value={passwordForm.confirmPassword}
+                        onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                        className="w-full p-4 bg-background/50 border border-white/10 rounded-2xl focus:ring-2 focus:ring-accent focus:border-accent outline-none text-primary font-medium transition-all hover:bg-background/80"
+                        placeholder="••••••••"
+                      />
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    {profileData?.wishlist?.length > 0 ? (
-                      profileData.wishlist.map((item) => {
-                        const target = item.room || item.mess;
-                        const type = item.room ? 'room' : 'mess';
-                        return (
-                          <Link 
-                            key={item.id}
-                            to={type === 'room' ? `/room/${target.id}` : `/mess/${target.id}`}
-                            className="group bg-background rounded-[2rem] border border-white/5 overflow-hidden hover:border-accent/30 transition-all hover:shadow-2xl"
-                          >
-                            <div className="aspect-video relative overflow-hidden">
-                               <img 
-                                 src={target.images?.[0]?.url || (type === 'room' ? `/assets/rooms/student_room_${(target.id % 15) + 1}.png` : `/assets/messes/mess_${(target.id % 5) + 1}.png`)} 
-                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                                 alt="" 
-                               />
-                               <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-md p-2 rounded-full text-red-500 shadow-lg">
-                                  <Heart className="w-4 h-4 fill-current" />
-                               </div>
-                            </div>
-                            <div className="p-6">
-                               <h4 className="text-lg font-bold text-primary mb-1 group-hover:text-accent transition-colors truncate">{target.title || target.name}</h4>
-                               <p className="text-xs text-taupe mb-4 flex items-center gap-1 font-medium truncate">
-                                 <MapPin className="w-3 h-3" /> {target.location}
-                               </p>
-                               <div className="flex items-center justify-between">
-                                  <span className="text-primary font-bold">₹{target.price?.toLocaleString()}</span>
-                                  <span className="text-[10px] font-black uppercase text-taupe px-2 py-1 bg-surface rounded-lg">{type}</span>
-                               </div>
-                            </div>
-                          </Link>
-                        );
-                      })
-                    ) : (
-                      <div className="sm:col-span-2 text-center py-12 bg-background rounded-3xl border border-dashed border-white/10">
-                        <p className="text-taupe font-bold text-sm">Your wishlist is empty. Start saving your favorite places!</p>
-                      </div>
-                    )}
+
+                  <div className="pt-6 border-t border-white/5 flex justify-end">
+                    <button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="px-8 py-4 bg-primary text-background hover:bg-accent font-bold rounded-2xl transition-all shadow-lg hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Update Password
+                    </button>
                   </div>
-                </div>
+                </form>
               </div>
-            </div>
+            )}
+
+            {activeTab === 'security' && (
+              <div className="bg-surface rounded-3xl p-8 sm:p-10 shadow-lg border border-white/10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="pb-6 border-b border-white/5">
+                  <h3 className="text-2xl font-bold text-primary flex items-center gap-2">
+                    <Shield className="w-6 h-6 text-accent" /> Security & Privacy
+                  </h3>
+                  <p className="text-taupe text-sm mt-1">Control public visibility and notification updates.</p>
+                </div>
+
+                <form onSubmit={handleUpdateSecurity} className="space-y-8">
+                  {/* Visibility Selection Cards */}
+                  <div className="space-y-4">
+                    <label className="block text-xs font-bold text-taupe uppercase tracking-widest">Profile Visibility</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { value: 'PUBLIC', label: 'Public Profile', desc: 'Visible to all registered students & landlords.' },
+                        { value: 'STUDENTS', label: 'Students Only', desc: 'Only verified student tenants can view details.' },
+                        { value: 'PRIVATE', label: 'Strict Private', desc: 'Only visible to roommates you explicitly accept.' }
+                      ].map((item) => (
+                        <button
+                          key={item.value}
+                          type="button"
+                          onClick={() => setSecurityForm({...securityForm, profileVisibility: item.value})}
+                          className={`p-5 rounded-2xl border text-left flex flex-col justify-between gap-4 transition-all ${securityForm.profileVisibility === item.value ? 'bg-accent/5 border-accent shadow-lg shadow-accent/5' : 'bg-background/40 border-white/10 hover:border-white/20'}`}
+                        >
+                          <div>
+                            <span className="block text-sm font-bold text-primary">{item.label}</span>
+                            <span className="block text-xs text-taupe mt-1 font-medium leading-relaxed">{item.desc}</span>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${securityForm.profileVisibility === item.value ? 'border-accent text-accent' : 'border-taupe/40'}`}>
+                            {securityForm.profileVisibility === item.value && <div className="w-2.5 h-2.5 rounded-full bg-accent" />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Notification Toggle Buttons */}
+                  <div className="space-y-4 pt-6 border-t border-white/5">
+                    <h4 className="text-xs font-bold text-accent uppercase tracking-widest">Notification Alerts</h4>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setSecurityForm({...securityForm, emailAlerts: !securityForm.emailAlerts})}
+                      className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${securityForm.emailAlerts ? 'bg-accent/5 border-accent/30 shadow-lg shadow-accent/5' : 'bg-background/40 border-white/10 hover:border-white/20'}`}
+                    >
+                      <div>
+                        <span className="block text-sm font-bold text-primary">Email Notifications</span>
+                        <span className="text-xs text-taupe font-medium mt-1 block">Receive booking confirmation receipts and invoices.</span>
+                      </div>
+                      <div className={`w-10 h-6 rounded-full transition-all relative flex items-center px-1 ${securityForm.emailAlerts ? 'bg-accent' : 'bg-zinc-800'}`}>
+                        <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${securityForm.emailAlerts ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                    </button>
+
+                    <button 
+                      type="button"
+                      onClick={() => setSecurityForm({...securityForm, pushNotifications: !securityForm.pushNotifications})}
+                      className={`w-full flex items-center justify-between p-5 rounded-2xl border transition-all text-left ${securityForm.pushNotifications ? 'bg-accent/5 border-accent/30 shadow-lg shadow-accent/5' : 'bg-background/40 border-white/10 hover:border-white/20'}`}
+                    >
+                      <div>
+                        <span className="block text-sm font-bold text-primary">Push Alerts</span>
+                        <span className="text-xs text-taupe font-medium mt-1 block">Real-time updates on chat messages and maintenance requests.</span>
+                      </div>
+                      <div className={`w-10 h-6 rounded-full transition-all relative flex items-center px-1 ${securityForm.pushNotifications ? 'bg-accent' : 'bg-zinc-800'}`}>
+                        <div className={`w-4 h-4 rounded-full bg-white transition-all transform ${securityForm.pushNotifications ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5 flex justify-end">
+                    <button 
+                      type="submit" 
+                      className="px-8 py-4 bg-primary text-background hover:bg-accent font-bold rounded-2xl transition-all shadow-lg hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      Save Preferences
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
   </div>
 
   {/* Report Issue Modal */}

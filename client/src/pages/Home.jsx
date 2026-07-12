@@ -218,7 +218,7 @@ export default function Home() {
                 <button 
                   onClick={handleLoadMore}
                   disabled={loadingMore}
-                  className="px-8 py-3.5 bg-primary text-background hover:bg-black font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                  className="px-8 py-3.5 bg-primary text-background hover:bg-black hover:text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50"
                 >
                   {loadingMore ? 'Loading...' : 'Load More Listings'}
                 </button>

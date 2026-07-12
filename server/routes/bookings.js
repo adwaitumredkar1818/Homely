@@ -4,23 +4,62 @@ const { prisma } = require('../config');
 const { authenticateToken } = require('../middleware/auth');
 const { sendNotification } = require('../utils/notifier');
 
+// Helper function to check if a user has an active or pending booking
+async function checkUserHasActiveBooking(userId) {
+  // Check if main tenant of an active/pending booking
+  const mainBooking = await prisma.booking.findFirst({
+    where: {
+      tenantId: userId,
+      status: { in: ['CONFIRMED', 'PENDING'] }
+    }
+  });
+  if (mainBooking) return true;
+
+  // Check if a member of an active/pending booking
+  const memberBooking = await prisma.groupMember.findFirst({
+    where: {
+      userId: userId,
+      status: { in: ['ACCEPTED', 'PENDING'] },
+      booking: {
+        status: { in: ['CONFIRMED', 'PENDING'] }
+      }
+    }
+  });
+  return !!memberBooking;
+}
+
 // Book Room Route
 router.post('/bookings', authenticateToken, async (req, res) => {
   const { roomId, price, roommateEmails } = req.body;
   try {
     // Check if the tenant already has an active or pending booking
-    const activeBooking = await prisma.booking.findFirst({
-      where: {
-        tenantId: req.user.id,
-        status: { in: ['CONFIRMED', 'PENDING'] }
-      }
-    });
-
-    if (activeBooking) {
+    const hasActive = await checkUserHasActiveBooking(req.user.id);
+    if (hasActive) {
       return res.status(400).json({ error: 'You can only book one room at a time.' });
     }
 
     const isGroup = Array.isArray(roommateEmails) && roommateEmails.length > 0;
+    let validUsers = [];
+
+    if (isGroup) {
+      // Create GroupMember records and notifications
+      const userMailMap = await Promise.all(
+        roommateEmails.map(async email => {
+          const u = await prisma.user.findUnique({ where: { email: email.trim() } });
+          return u;
+        })
+      );
+
+      validUsers = userMailMap.filter(u => u !== null && u.id !== req.user.id);
+
+      // Check if any roommate already has an active/pending booking
+      for (const roommate of validUsers) {
+        const roommateHasActive = await checkUserHasActiveBooking(roommate.id);
+        if (roommateHasActive) {
+          return res.status(400).json({ error: `${roommate.name} (${roommate.email}) already has an active or pending booking.` });
+        }
+      }
+    }
     
     // Calculate totalPrice
     const basePrice = (price * 3) + 800; // Matching frontend calculation
@@ -38,16 +77,6 @@ router.post('/bookings', authenticateToken, async (req, res) => {
     });
 
     if (isGroup) {
-      // Create GroupMember records and notifications
-      const userMailMap = await Promise.all(
-        roommateEmails.map(async email => {
-          const u = await prisma.user.findUnique({ where: { email: email.trim() } });
-          return u;
-        })
-      );
-
-      const validUsers = userMailMap.filter(u => u !== null && u.id !== req.user.id);
-
       for (const roommate of validUsers) {
         await prisma.groupMember.create({
           data: {
@@ -124,6 +153,13 @@ router.put('/bookings/group/:id/respond', authenticateToken, async (req, res) =>
 
     if (!memberRecord) {
       return res.status(404).json({ error: 'Invitation not found' });
+    }
+
+    if (status === 'ACCEPTED') {
+      const hasActive = await checkUserHasActiveBooking(req.user.id);
+      if (hasActive) {
+        return res.status(400).json({ error: 'You already have an active or pending booking.' });
+      }
     }
 
     await prisma.groupMember.update({
@@ -225,10 +261,60 @@ router.patch('/host/reservations/:type/:id/status', authenticateToken, async (re
       );
     }
 
-    res.json({ success: true, reservation: updated });
+    res.json(updated);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update reservation status' });
+  }
+});
+
+// Leave/Cancel Booking Route
+router.post('/bookings/:id/leave', authenticateToken, async (req, res) => {
+  try {
+    const bookingId = parseInt(req.params.id);
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { groupMembers: true, room: true }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Booking not found' });
+    }
+
+    // Check if the user is either the main tenant or a group member
+    const isMainTenant = booking.tenantId === req.user.id;
+    const groupMember = booking.groupMembers.find(m => m.userId === req.user.id);
+
+    if (!isMainTenant && !groupMember) {
+      return res.status(403).json({ error: 'You are not authorized to leave this booking' });
+    }
+
+    // Update the booking status to CANCELLED
+    await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status: 'CANCELLED' }
+    });
+
+    if (booking.isGroup) {
+      await prisma.groupMember.updateMany({
+        where: { bookingId: bookingId },
+        data: { status: 'DECLINED' }
+      });
+    }
+
+    // Send notifications to Host
+    await sendNotification(
+      booking.room.hostId,
+      'BOOKING',
+      'Booking Cancelled',
+      `The booking for "${booking.room.title}" was cancelled/left by a tenant.`,
+      '/host/reservations'
+    );
+
+    res.json({ success: true, message: 'Successfully left the room' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to leave booking' });
   }
 });
 

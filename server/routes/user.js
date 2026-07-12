@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const { prisma } = require('../config');
 const { authenticateToken } = require('../middleware/auth');
 
@@ -96,7 +97,14 @@ router.get('/profile', authenticateToken, async (req, res) => {
         role: user.role,
         isVerified: user.isVerified,
         idProofUrl: user.idProofUrl,
-        studentIdUrl: user.studentIdUrl
+        studentIdUrl: user.studentIdUrl,
+        bio: user.bio,
+        college: user.college,
+        studyPreference: user.studyPreference,
+        socialPreference: user.socialPreference,
+        cleanlinessLevel: user.cleanlinessLevel,
+        isSmoking: user.isSmoking,
+        isVegetarian: user.isVegetarian
       },
       myBookings: [
         ...user.bookings.map(b => ({ ...b, type: 'ROOM' })),
@@ -156,6 +164,58 @@ router.get('/:id', authenticateToken, async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Update user profile details
+router.put('/profile', authenticateToken, async (req, res) => {
+  const { name, bio, college, studyPreference, socialPreference, cleanlinessLevel, isSmoking, isVegetarian } = req.body;
+  try {
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name || undefined,
+        bio: bio !== undefined ? bio : undefined,
+        college: college !== undefined ? college : undefined,
+        studyPreference: studyPreference !== undefined ? studyPreference : undefined,
+        socialPreference: socialPreference !== undefined ? socialPreference : undefined,
+        cleanlinessLevel: cleanlinessLevel !== undefined ? parseInt(cleanlinessLevel) : undefined,
+        isSmoking: isSmoking !== undefined ? !!isSmoking : undefined,
+        isVegetarian: isVegetarian !== undefined ? !!isVegetarian : undefined
+      }
+    });
+    res.json({ success: true, user: updated });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update profile details' });
+  }
+});
+
+// Change Password Route
+router.put('/change-password', authenticateToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!passwordMatch) {
+      return res.status(400).json({ error: 'Incorrect current password' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedNewPassword }
+    });
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to change password' });
   }
 });
 

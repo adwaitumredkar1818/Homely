@@ -7,9 +7,14 @@ import { useTheme } from '../context/ThemeContext';
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user } = useAuth();
+  const { login, user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  
+
+  // Auto-logout user on visiting Auth/Login page
+  useEffect(() => {
+    logout();
+  }, []);
+
   const [isLogin, setIsLogin] = useState(true);
   const [role, setRole] = useState('TENANT');
   const [formData, setFormData] = useState({
@@ -20,13 +25,6 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-
-  // Redirect if already logged in based on role
-  useEffect(() => {
-    if (user) {
-      navigate(user.role === 'HOST' ? '/host' : '/home');
-    }
-  }, [user, navigate]);
 
   const from = location.state?.from || '/home';
 

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" // Change to "postgresql" to migrate to Supabase/PostgreSQL
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -40,6 +41,7 @@ model User {
   wishlist      Wishlist[]
   maintenanceRequests MaintenanceRequest[]
   notifications       Notification[]
+  roommateListings    RoommateListing[]
 }
 
 model Room {
@@ -64,6 +66,7 @@ model Room {
   nearbyMesses Mess[]   @relation("RoomMesses")
   wishlist     Wishlist[]
   maintenanceRequests MaintenanceRequest[]
+  roommateListings    RoommateListing[]
 }
 
 model Image {
@@ -89,6 +92,7 @@ model Booking {
   room       Room      @relation(fields: [roomId], references: [id])
   tenantId   Int
   tenant     User      @relation("UserBookings", fields: [tenantId], references: [id])
+  roommateListing RoommateListing?
 }
 
 model Message {
@@ -232,4 +236,30 @@ model GroupMember {
   userId    Int
   status    String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
   createdAt DateTime @default(now())
+}
+
+model RoommateListing {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String
+  budget           Float
+  location         String
+  moveInDate       DateTime
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  studyPreference  String?
+  socialPreference String?
+  cleanlinessLevel Int      @default(3)
+  isSmoking        Boolean  @default(false)
+  isVegetarian     Boolean  @default(false)
+
+  // Relations
+  posterId         Int
+  poster           User     @relation(fields: [posterId], references: [id])
+  bookingId        Int      @unique
+  booking          Booking  @relation(fields: [bookingId], references: [id])
+  roomId           Int
+  room             Room     @relation(fields: [roomId], references: [id])
 }

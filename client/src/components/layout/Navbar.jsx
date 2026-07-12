@@ -142,15 +142,14 @@ export default function Navbar() {
                 List property
               </button>
             ) : (
-              <>
-
+              user && (
                 <Link 
-                  to="/hub"
-                  className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
+                  to="/roommates"
+                  className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5 flex items-center gap-1.5"
                 >
-                  Hub
+                  <Users className="w-4 h-4 text-taupe" /> Find Roommates
                 </Link>
-              </>
+              )
             )}
 
             {/* Notifications Bell */}
@@ -259,19 +258,22 @@ export default function Navbar() {
                       </Link>
 
                       <Link 
-                        to="/hub" 
-                        onClick={() => setShowDropdown(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
-                      >
-                        <LayoutDashboard className="w-4 h-4" /> Community Hub
-                      </Link>
-                      <Link 
                         to="/inbox" 
                         onClick={() => setShowDropdown(false)}
                         className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left"
                       >
                         <MessageSquare className="w-4 h-4" /> Inbox
                       </Link>
+
+                      {user?.role !== 'HOST' && (
+                        <Link 
+                          to="/roommates" 
+                          onClick={() => setShowDropdown(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left border-t border-white/5"
+                        >
+                          <Users className="w-4 h-4" /> Find Roommates
+                        </Link>
+                      )}
                     </>
                   ) : (
                     <div className="px-2 mb-2">
@@ -320,6 +322,7 @@ export default function Navbar() {
         <div className="md:hidden bg-surface border-t border-white/10 py-4 w-full">
            <div className="px-4 space-y-4">
               {user ? (
+                <>
                 <div className="flex items-center gap-3 mb-6 p-4 bg-white/5 rounded-2xl">
                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-background font-bold text-xl">
                       {user.name.charAt(0)}
@@ -329,6 +332,15 @@ export default function Navbar() {
                       <button onClick={() => { navigate('/profile'); setShowDropdown(false); }} className="text-xs text-accent font-bold">View Profile</button>
                    </div>
                 </div>
+                {user.role !== 'HOST' && (
+                  <button 
+                    onClick={() => { navigate('/roommates'); setShowDropdown(false); }}
+                    className="w-full flex items-center justify-center gap-2 py-4 bg-white/5 text-primary border border-white/10 rounded-2xl font-bold mb-4"
+                  >
+                    <Users className="w-5 h-5 text-accent" /> Find Roommates
+                  </button>
+                )}
+                </>
               ) : (
                 <Link 
                   to="/auth" 

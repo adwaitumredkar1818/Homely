@@ -43,7 +43,6 @@ export default function HostLayout() {
     { name: 'Reservations', href: '/host/reservations', icon: Calendar },
     { name: 'Inbox', href: '/host/inbox', icon: Inbox },
     { name: 'Maintenance', href: '/host/maintenance', icon: Wrench },
-    { name: 'Community Hub', href: '/hub', icon: MessageSquare },
   ];
 
   const handleLogout = () => {
@@ -124,13 +123,6 @@ export default function HostLayout() {
                         className="flex items-center gap-3 px-5 py-3 text-primary hover:bg-background/50 transition-colors font-semibold"
                       >
                         <User className="w-4 h-4" /> Personal Profile
-                      </Link>
-                      <Link 
-                        to="/hub" 
-                        onClick={() => setShowDropdown(false)}
-                        className="flex items-center gap-3 px-5 py-3 text-primary hover:bg-background/50 transition-colors font-semibold"
-                      >
-                        <MessageSquare className="w-4 h-4" /> Community Hub
                       </Link>
                       
                       <Link 

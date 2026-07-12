@@ -343,4 +343,43 @@ router.get('/:id/recommendations', async (req, res) => {
   }
 });
 
+// Leave Mess Subscription Route
+router.post('/subscriptions/:id/leave', authenticateToken, async (req, res) => {
+  try {
+    const subId = parseInt(req.params.id);
+    const subscription = await prisma.messSubscription.findUnique({
+      where: { id: subId },
+      include: { mess: true }
+    });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    if (subscription.tenantId !== req.user.id) {
+      return res.status(403).json({ error: 'You are not authorized to cancel this subscription' });
+    }
+
+    // Update status to CANCELLED
+    await prisma.messSubscription.update({
+      where: { id: subId },
+      data: { status: 'CANCELLED' }
+    });
+
+    // Notify Host
+    await sendNotification(
+      subscription.mess.hostId,
+      'BOOKING',
+      'Subscription Cancelled',
+      `A tenant cancelled their subscription to "${subscription.mess.name}".`,
+      '/host/messes'
+    );
+
+    res.json({ success: true, message: 'Successfully cancelled mess subscription' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to cancel subscription' });
+  }
+});
+
 module.exports = router;
