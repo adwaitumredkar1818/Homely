@@ -29,6 +29,7 @@ const messImages = [
 
 async function main() {
     // Clean up
+    await prisma.roommateListing.deleteMany();
     await prisma.review.deleteMany();
     await prisma.image.deleteMany();
     await prisma.booking.deleteMany();
@@ -38,6 +39,10 @@ async function main() {
     await prisma.mess.deleteMany();
     await prisma.room.deleteMany();
     await prisma.message.deleteMany();
+    await prisma.maintenanceRequest.deleteMany();
+    await prisma.wishlist.deleteMany();
+    await prisma.notification.deleteMany();
+    await prisma.groupMember.deleteMany();
     await prisma.user.deleteMany();
     
     // Create base users with proper bcrypt hashing

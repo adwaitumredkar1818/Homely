@@ -46,9 +46,9 @@ export default function Map({ rooms, collegeLocation }) {
             >
               <div className="flex flex-col items-center">
                 <div className="bg-primary p-2 rounded-full border-4 border-white shadow-2xl animate-bounce">
-                  <School className="w-6 h-6 text-white" />
+                  <School className="w-6 h-6 text-background" />
                 </div>
-                <div className="mt-1 px-3 py-1 bg-primary text-white text-[10px] font-black rounded-lg shadow-lg uppercase tracking-widest">
+                <div className="mt-1 px-3 py-1 bg-primary text-background text-[10px] font-black rounded-lg shadow-lg uppercase tracking-widest">
                   {collegeLocation.name}
                 </div>
               </div>
@@ -63,7 +63,7 @@ export default function Map({ rooms, collegeLocation }) {
             >
               <div className="group relative">
                   <div className="w-10 h-10 bg-white border-2 border-primary rounded-full flex items-center justify-center shadow-xl group-hover:bg-primary group-hover:scale-110 transition-all duration-300 cursor-pointer">
-                    <Home className="w-5 h-5 text-primary group-hover:text-white" />
+                    <Home className="w-5 h-5 text-zinc-800 group-hover:text-background" />
                   </div>
                   {room.distanceToCollege && (
                     <div className="absolute -top-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-accent text-background text-[8px] font-black px-2 py-0.5 rounded-full shadow-md">

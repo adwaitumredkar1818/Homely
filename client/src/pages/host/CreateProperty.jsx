@@ -126,7 +126,7 @@ export default function CreateProperty() {
           {/* Basic Info */}
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-2">
-               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-xs font-black">01</div>
+               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-background text-xs font-black">01</div>
                <h3 className="text-xl font-bold text-primary">Basic Information</h3>
             </div>
             <div className="space-y-4">
@@ -158,7 +158,7 @@ export default function CreateProperty() {
           {/* Location & Pricing */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="md:col-span-2 flex items-center gap-3">
-               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-xs font-black">02</div>
+               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-background text-xs font-black">02</div>
                <h3 className="text-xl font-bold text-primary">Location & Pricing</h3>
             </div>
             <div>
@@ -220,7 +220,7 @@ export default function CreateProperty() {
           {/* Photo Gallery (Upload) */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-xs font-black">03</div>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-background text-xs font-black">03</div>
               <h3 className="text-xl font-bold text-primary">Photos Gallery</h3>
             </div>
             
@@ -265,7 +265,7 @@ export default function CreateProperty() {
           {/* Amenities */}
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-2">
-               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-xs font-black">04</div>
+               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-background text-xs font-black">04</div>
                <h3 className="text-xl font-bold text-primary">Amenities</h3>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
