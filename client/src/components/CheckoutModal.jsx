@@ -92,13 +92,20 @@ export default function CheckoutModal({ isOpen, onClose, amount, itemTitle, onCo
                 <div className="space-y-1">
                   <label className="block text-[10px] font-black uppercase text-taupe tracking-wider">Expiry Date</label>
                   <input 
-                    type="text" 
+                    type="month" 
                     required
-                    placeholder="MM/YY"
-                    maxLength={5}
-                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent/50 text-sm font-semibold text-center"
+                    min={new Date().toISOString().slice(0, 7)}
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent/50 text-sm font-semibold cursor-pointer"
                     value={expiry}
                     onChange={(e) => setExpiry(e.target.value)}
+                    onKeyDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      try {
+                        e.target.showPicker();
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
                   />
                 </div>
                 <div className="space-y-1">

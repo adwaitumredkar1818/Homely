@@ -17,7 +17,6 @@ import EditProperty from './pages/host/EditProperty';
 import Messes from './pages/host/Messes';
 import Verification from './pages/Verification';
 import ForgotPassword from './pages/ForgotPassword';
-import Roommates from './pages/Roommates';
 
 
 function PublicLayout() {
@@ -48,8 +47,6 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/verification" element={<Verification />} />
-          <Route path="/roommates" element={<Roommates />} />
-
         </Route>
 
         {/* Host Routes - Sidebar Admin Layout */}

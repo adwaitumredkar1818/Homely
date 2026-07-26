@@ -41,6 +41,19 @@ export default function Profile() {
     pushNotifications: true
   });
 
+  // Roommate Ad States
+  const [roommateAd, setRoommateAd] = useState(null);
+  const [adTitle, setAdTitle] = useState('');
+  const [adDesc, setAdDesc] = useState('');
+  const [adBudget, setAdBudget] = useState('');
+  const [adMoveIn, setAdMoveIn] = useState('');
+  const [studyPref, setStudyPref] = useState('Quiet Study');
+  const [socialPref, setSocialPref] = useState('Balanced');
+  const [cleanliness, setCleanliness] = useState(3);
+  const [isSmoking, setIsSmoking] = useState(false);
+  const [isVeg, setIsVeg] = useState(false);
+  const [isAdSubmitting, setIsAdSubmitting] = useState(false);
+
   const isHost = user?.role === 'HOST';
 
   useEffect(() => {
@@ -66,6 +79,25 @@ export default function Profile() {
         if (res.ok) {
           setProfileData(data);
           setTickets(tickData || []);
+
+          // Fetch roommate ad
+          const roommateRes = await fetch('http://localhost:5000/api/roommates');
+          if (roommateRes.ok) {
+            const allAds = await roommateRes.json();
+            const userAd = allAds.find(ad => ad.posterId === data.user.id);
+            if (userAd) {
+              setRoommateAd(userAd);
+              setAdTitle(userAd.title || '');
+              setAdDesc(userAd.description || '');
+              setAdBudget(userAd.budget || '');
+              setAdMoveIn(userAd.moveInDate ? new Date(userAd.moveInDate).toISOString().split('T')[0] : '');
+              setStudyPref(userAd.studyPreference || 'Quiet Study');
+              setSocialPref(userAd.socialPreference || 'Balanced');
+              setCleanliness(userAd.cleanlinessLevel || 3);
+              setIsSmoking(userAd.isSmoking || false);
+              setIsVeg(userAd.isVegetarian || false);
+            }
+          }
         } else {
           setError(data.error || 'Failed to load profile');
         }
@@ -150,6 +182,89 @@ export default function Profile() {
       }
     } catch (err) {
       alert('Network error. Failed to cancel subscription.');
+    }
+  };
+
+  const handlePublishRoommateAd = async (e) => {
+    e.preventDefault();
+    setIsAdSubmitting(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+
+    const payload = {
+      title: adTitle,
+      description: adDesc,
+      budget: parseFloat(adBudget),
+      moveInDate: adMoveIn,
+      studyPreference: studyPref,
+      socialPreference: socialPref,
+      cleanlinessLevel: parseInt(cleanliness),
+      isSmoking,
+      isVegetarian: isVeg
+    };
+
+    try {
+      const url = roommateAd 
+        ? `http://localhost:5000/api/roommates/${roommateAd.id}`
+        : 'http://localhost:5000/api/roommates';
+      const method = roommateAd ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRoommateAd(data);
+        setSuccessMessage(roommateAd ? 'Roommate ad updated successfully!' : 'Roommate ad published successfully!');
+      } else {
+        setErrorMessage(data.error || 'Failed to save roommate ad.');
+      }
+    } catch (err) {
+      setErrorMessage('Network error. Failed to save roommate ad.');
+    } finally {
+      setIsAdSubmitting(false);
+    }
+  };
+
+  const handleDeleteRoommateAd = async () => {
+    if (!roommateAd) return;
+    if (!window.confirm('Are you sure you want to delete your roommate ad?')) return;
+    setIsAdSubmitting(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/roommates/${roommateAd.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        setRoommateAd(null);
+        setAdTitle('');
+        setAdDesc('');
+        setAdBudget('');
+        setAdMoveIn('');
+        setStudyPref('Quiet Study');
+        setSocialPref('Balanced');
+        setCleanliness(3);
+        setIsSmoking(false);
+        setIsVeg(false);
+        setSuccessMessage('Roommate ad deleted successfully!');
+      } else {
+        const data = await res.json();
+        setErrorMessage(data.error || 'Failed to delete roommate ad.');
+      }
+    } catch (err) {
+      setErrorMessage('Network error. Failed to delete roommate ad.');
+    } finally {
+      setIsAdSubmitting(false);
     }
   };
 
@@ -371,6 +486,17 @@ export default function Profile() {
                 </div>
                 <ChevronRight className={`w-4 h-4 ${activeTab === 'bookings' ? 'text-background' : 'text-taupe'}`} />
               </button>
+              {user?.role !== 'HOST' && (
+                <button 
+                  onClick={() => { setActiveTab('roommateAd'); setSuccessMessage(''); setErrorMessage(''); }}
+                  className={`w-full flex items-center justify-between px-6 py-4 transition-colors font-bold text-left border-b border-white/5 ${activeTab === 'roommateAd' ? 'bg-primary text-background' : 'text-primary hover:bg-accent/5'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <Users className={`w-5 h-5 ${activeTab === 'roommateAd' ? 'text-background' : 'text-taupe'}`} /> Roommate Ad
+                  </div>
+                  <ChevronRight className={`w-4 h-4 ${activeTab === 'roommateAd' ? 'text-background' : 'text-taupe'}`} />
+                </button>
+              )}
               <button 
                 onClick={() => { setActiveTab('personal'); setSuccessMessage(''); setErrorMessage(''); }}
                 className={`w-full flex items-center justify-between px-6 py-4 transition-colors font-bold text-left border-b border-white/5 ${activeTab === 'personal' ? 'bg-primary text-background' : 'text-primary hover:bg-accent/5'}`}
@@ -549,11 +675,11 @@ export default function Profile() {
                                      <AlertCircle className="w-3 h-3" /> Report Issue
                                    </button>
                                    <button 
-                                     onClick={() => navigate('/roommates')}
-                                     className="text-xs font-bold bg-accent/15 text-accent px-4 py-2 rounded-xl hover:bg-accent hover:text-background transition-colors flex items-center gap-1"
-                                   >
-                                     <Users className="w-3 h-3" /> Find Roommate
-                                   </button>
+                                      onClick={() => setActiveTab('roommateAd')}
+                                      className="text-xs font-bold bg-accent/15 text-accent px-4 py-2 rounded-xl hover:bg-accent hover:text-background transition-colors flex items-center gap-1"
+                                    >
+                                      <Users className="w-3 h-3" /> Find Roommate
+                                    </button>
                                    </>
                                  )}
                                  {(booking.status === 'CONFIRMED' || booking.status === 'PENDING') && (
@@ -1010,7 +1136,161 @@ export default function Profile() {
                 </form>
               </div>
             )}
-          </div>
+
+            {activeTab === 'roommateAd' && (
+              <div className="bg-surface rounded-3xl p-8 shadow-lg border border-white/10">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-2xl font-bold text-primary animate-bloom">
+                    Manage Roommate Advertisement
+                  </h3>
+                  {roommateAd && (
+                    <button 
+                      type="button"
+                      onClick={handleDeleteRoommateAd}
+                      className="text-red-500 font-bold text-sm hover:underline"
+                    >
+                      Delete Advertisement
+                    </button>
+                  )}
+                </div>
+
+                {!profileData?.bookings?.some(b => b.type === 'ROOM' && b.status === 'CONFIRMED') ? (
+                  <div className="p-8 bg-amber-500/10 text-amber-500 rounded-3xl border border-amber-500/20 text-center">
+                    <p className="font-bold text-lg mb-2">Not Eligible</p>
+                    <p className="text-sm">You must have an active confirmed room booking to publish a roommate advertisement.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handlePublishRoommateAd} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-black text-taupe uppercase tracking-widest">Ad Title</label>
+                        <input 
+                          type="text"
+                          required
+                          placeholder="e.g. Friendly student looking for a neat roommate"
+                          value={adTitle}
+                          onChange={(e) => setAdTitle(e.target.value)}
+                          className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent font-semibold"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-taupe uppercase tracking-widest">Monthly Budget Share (₹)</label>
+                          <input 
+                            type="number"
+                            required
+                            placeholder="₹"
+                            value={adBudget}
+                            onChange={(e) => setAdBudget(e.target.value)}
+                            className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent font-semibold"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-taupe uppercase tracking-widest">Move-in Date</label>
+                          <input 
+                            type="date"
+                            required
+                            value={adMoveIn}
+                            onChange={(e) => setAdMoveIn(e.target.value)}
+                            className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent font-semibold cursor-pointer"
+                            onKeyDown={(e) => e.preventDefault()}
+                            onClick={(e) => {
+                              try {
+                                e.target.showPicker();
+                              } catch (err) {
+                                console.error(err);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-black text-taupe uppercase tracking-widest">Description</label>
+                      <textarea 
+                        required
+                        rows={4}
+                        placeholder="Tell others about yourself, your routines, hobbies, and what you are looking for in a flatmate."
+                        value={adDesc}
+                        onChange={(e) => setAdDesc(e.target.value)}
+                        className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent font-semibold"
+                      />
+                    </div>
+
+                    <div className="border-t border-white/5 pt-6">
+                      <h4 className="text-sm font-black text-primary uppercase tracking-widest mb-4">Habit Preferences</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-taupe uppercase tracking-widest">Study Style</label>
+                          <select 
+                            value={studyPref}
+                            onChange={(e) => setStudyPref(e.target.value)}
+                            className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent font-semibold"
+                          >
+                            <option>Quiet Study</option>
+                            <option>Group Study</option>
+                            <option>Flexible</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-taupe uppercase tracking-widest">Social Vibe</label>
+                          <select 
+                            value={socialPref}
+                            onChange={(e) => setSocialPref(e.target.value)}
+                            className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-primary outline-none focus:ring-2 focus:ring-accent font-semibold"
+                          >
+                            <option>Introvert</option>
+                            <option>Extrovert</option>
+                            <option>Balanced</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-black text-taupe uppercase tracking-widest">Cleanliness (1-5)</label>
+                          <input 
+                            type="range"
+                            min={1}
+                            max={5}
+                            value={cleanliness}
+                            onChange={(e) => setCleanliness(parseInt(e.target.value))}
+                            className="w-full accent-accent py-3"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-6 border-t border-white/5 pt-6">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={isSmoking}
+                          onChange={(e) => setIsSmoking(e.target.checked)}
+                          className="w-5 h-5 rounded border-white/10 text-accent focus:ring-accent bg-background"
+                        />
+                        <span className="text-xs font-black text-taupe uppercase tracking-widest">Smoking Allowed</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={isVeg}
+                          onChange={(e) => setIsVeg(e.target.checked)}
+                          className="w-5 h-5 rounded border-white/10 text-accent focus:ring-accent bg-background"
+                        />
+                        <span className="text-xs font-black text-taupe uppercase tracking-widest">Vegetarian Only</span>
+                      </label>
+                    </div>
+
+                    <button 
+                      type="submit"
+                      disabled={isAdSubmitting}
+                      className="w-full py-4 bg-primary text-background hover:bg-accent font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isAdSubmitting ? 'Saving...' : (roommateAd ? 'Update Ad' : 'Publish Ad')}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
         </div>
       </div>
   </div>

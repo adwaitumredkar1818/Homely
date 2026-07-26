@@ -134,22 +134,13 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-2">
-            {user?.role === 'HOST' ? (
+            {user?.role === 'HOST' && (
               <button 
                 onClick={() => setIsModalOpen(true)}
                 className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5"
               >
                 List property
               </button>
-            ) : (
-              user && (
-                <Link 
-                  to="/roommates"
-                  className="text-primary font-bold hover:text-accent transition-colors px-4 pb-0.5 flex items-center gap-1.5"
-                >
-                  <Users className="w-4 h-4 text-taupe" /> Find Roommates
-                </Link>
-              )
             )}
 
             {/* Notifications Bell */}
@@ -265,15 +256,7 @@ export default function Navbar() {
                         <MessageSquare className="w-4 h-4" /> Inbox
                       </Link>
 
-                      {user?.role !== 'HOST' && (
-                        <Link 
-                          to="/roommates" 
-                          onClick={() => setShowDropdown(false)}
-                          className="flex items-center gap-3 px-4 py-3 text-primary hover:bg-white/5 transition-colors font-medium text-left border-t border-white/5"
-                        >
-                          <Users className="w-4 h-4" /> Find Roommates
-                        </Link>
-                      )}
+
                     </>
                   ) : (
                     <div className="px-2 mb-2">
@@ -332,14 +315,7 @@ export default function Navbar() {
                       <button onClick={() => { navigate('/profile'); setShowDropdown(false); }} className="text-xs text-accent font-bold">View Profile</button>
                    </div>
                 </div>
-                {user.role !== 'HOST' && (
-                  <button 
-                    onClick={() => { navigate('/roommates'); setShowDropdown(false); }}
-                    className="w-full flex items-center justify-center gap-2 py-4 bg-white/5 text-primary border border-white/10 rounded-2xl font-bold mb-4"
-                  >
-                    <Users className="w-5 h-5 text-accent" /> Find Roommates
-                  </button>
-                )}
+
                 </>
               ) : (
                 <Link 
