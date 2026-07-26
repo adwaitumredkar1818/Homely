@@ -2,40 +2,75 @@
 
 Homely is a premium student-housing and dining discovery web application. It connects students searching for hostel accommodations and tiffin mess subscriptions with landlords, tiffin service operators, and compatible flatmates.
 
+<p align="left">
+  <img src="https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+  <img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB" alt="Express.js" />
+  <img src="https://img.shields.io/badge/Prisma-3982CC?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma" />
+  <img src="https://img.shields.io/badge/sqlite-%2307405e.svg?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+</p>
+
 ---
 
 ## 🚀 Key Features
 
-### 1. Hostel discovery & bookings
-* Browse rooms, hostels, and PGs with a cinematic photo grid, reviews, pricing, and distance parameters.
+### 1. Hostel Discovery & Bookings
+* Browse rooms, hostels, and PGs with a custom photo grid, reviews, pricing, and distance parameters.
 * Interactive map integration using Advanced Markers showing student-specific locations and neighborhood essentials (Libraries, Hospitals, Late-Night Food Points).
 * Real-time room booking flow with secure group/shared room invitations.
 
-### 2. Tiffin Mess discovery & subscriptions
+### 2. Tiffin Mess Discovery & Subscriptions
 * Subscriptions for Veg/Non-Veg/Both dining plans with reviews and location badges.
 * Integrated tiffin service reviews, overall ratings, and location proximity filters.
 
-### 3. Roommate Required listings 👥
+### 3. Roommate Required Listings 👥
 * **Confirmed Booking Gating**: Verified tenants with active confirmed room bookings can publish public roommate request advertisements.
 * **Compatibility Tagging**: Auto-prefills and matches roommates based on habits: Study Style (Quiet, Group, Flexible), Social Vibe (Introvert, Extrovert, Balanced), Cleanliness Indexes, Smoking preferences, and Dietary choices.
 * **In-app Chat Connect**: Direct linking to in-app messaging threads to instantly coordinate flatshares.
 
-### 4. Interactive Profile settings
-* Custom, tabbed profile controller to manage **Personal Info** (Name, College, Bio), **Account Settings** (Preferences, clean/diet tags), and **Security & Privacy** (Password change, custom toggle controls for profile visibility).
+### 4. Interactive Profile Settings & Dashboard
+* Custom, tabbed profile controller to manage **Personal Info** (Name, Bio, College), **Account Settings** (Preferences, clean/diet tags), and **Security & Privacy** (Password change, custom toggle controls for profile visibility).
+* Inline Roommate Ad manager directly in the dashboard, enabling users to create, update, and delete their ads.
 
 ### 5. Notifications
 * Real-time updates for bookings, message requests, and landlord responses powered by Socket.io.
 
-### 6. Full Dark Theme support
+### 6. Full Dark Theme Support
 * Native styling transitions with complete visual visibility checks for all text, icons, forms, interactive map markers, and primary buttons.
 
 ---
 
-## 🛠️ Tech Stack
+## 📐 Database Architecture
 
-* **Frontend**: React (Vite SPA), Tailwind CSS, Lucide icons, Google Maps React API, Framer Motion.
-* **Backend**: Node.js, Express, Socket.io.
-* **Database**: Prisma ORM, SQLite (`prisma/dev.db` configured locally for fully offline development).
+The diagram below details the data relationships between users, listings, bookings, and roommate requests:
+
+```mermaid
+erDiagram
+    User ||--o{ Booking : places
+    User ||--o{ RoommateListing : posts
+    User ||--o{ Message : sends
+    Room ||--o{ Booking : has
+    Room ||--o{ RoommateListing : attached_to
+    Booking ||--o| RoommateListing : qualifies
+```
+
+---
+
+## 🌐 API Reference
+
+### Auth Endpoints
+* `POST /api/auth/register` - Create a student or host account.
+* `POST /api/auth/login` - Authenticate and return JWT token.
+
+### Listing & Bookings
+* `GET /api/rooms` - Query and filter available room listings.
+* `POST /api/bookings` - Submit mock credit card information to secure booking.
+
+### Roommates Notice Board
+* `GET /api/roommates` - Browse all active roommate request notices.
+* `POST /api/roommates` - Create roommate request (requires active booking).
+* `DELETE /api/roommates/:id` - Deactivate/Delete roommate request notice.
 
 ---
 
@@ -46,7 +81,7 @@ Homely is a premium student-housing and dining discovery web application. It con
 │   ├── src/
 │   │   ├── components/    # Reusable UI (RoomCard, MessCard, Map, Layout)
 │   │   ├── context/       # AuthContext, ThemeContext
-│   │   └── pages/         # Home, Auth, Profile, Roommates, Details
+│   │   └── pages/         # Home, Auth, Profile, Details
 │   └── package.json
 └── server/                 # Express Backend
     ├── prisma/             # Schema configuration, migrations, seed scripts
@@ -59,12 +94,18 @@ Homely is a premium student-housing and dining discovery web application. It con
 
 ## ⚙️ Quick Start Setup
 
-Follow these steps to run the application completely offline:
+Follow these steps to clone and run the application completely offline:
 
-### Prerequisites
-Make sure you have **Node.js** (v18+) and **npm** installed.
+### 1. Clone the Repository
+```bash
+# Clone the repository
+git clone https://github.com/adwaitumredkar1818/Homely.git
 
-### 1. Setup the Backend Server
+# Navigate into the project root directory
+cd Homely
+```
+
+### 2. Setup the Backend Server
 ```bash
 # Navigate to the server folder
 cd server
@@ -82,7 +123,7 @@ node prisma/seed.js
 node server
 ```
 
-### 2. Setup the Frontend Client
+### 3. Setup the Frontend Client
 ```bash
 # Navigate to client folder in a new terminal window
 cd client
