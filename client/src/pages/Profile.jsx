@@ -1293,6 +1293,7 @@ export default function Profile() {
             )}
         </div>
       </div>
+    </div>
   </div>
 
   {/* Report Issue Modal */}
